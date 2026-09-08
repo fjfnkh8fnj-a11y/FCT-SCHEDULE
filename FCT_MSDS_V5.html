@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<title>FCT MSDS 안전관리 V5 Mobile</title>
+<style>
+:root{--b:#0b6b67;--bs:#e8f6f4;--bg:#f4f7fb;--c:#fff;--t:#142033;--m:#6a778b;--l:#dde5ee;--warn:#fff8eb}
+*{box-sizing:border-box}html,body{margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",Arial,sans-serif;background:var(--bg);color:var(--t);-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit}button{cursor:pointer}.app{max-width:1480px;margin:auto;padding:16px}
+header{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#073e45,#0b6b67);color:#fff;padding:18px 20px;border-radius:18px}
+.logo{width:56px;height:50px;min-width:56px;border-radius:14px;background:#fff;color:var(--b);display:grid;place-items:center;font-weight:900;letter-spacing:.5px}h1{font-size:22px;margin:0}header p{margin:4px 0 0;font-size:13px;opacity:.85}.byline{margin-left:auto;align-self:flex-start;font-size:12px;font-weight:700;white-space:nowrap;padding-top:2px}
+.dataReady{margin-top:7px;display:inline-block;padding:5px 10px;border-radius:999px;background:#e8f6f4;color:#0b6b67;font-size:12px;font-weight:800;border:1px solid #b9dfdc}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}.stat,.panel,.card,.tableWrap,.fallback{background:#fff;border:1px solid var(--l);border-radius:14px}.stat{padding:13px}.stat b{font-size:26px;display:block}.stat span{font-size:12px;color:var(--m)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;background:#fff;border:1px solid var(--l);border-radius:14px;padding:10px;margin-bottom:12px}.nav{border:1px solid var(--l);background:#fff;padding:10px 12px;border-radius:9px;color:#1479df}.nav.active{background:var(--bs);border-color:#a9d9d5;color:var(--b);font-weight:800}.search{flex:1;min-width:220px}input,select,textarea{width:100%;border:1px solid #ccd7e3;border-radius:9px;padding:10px;background:#fff;color:var(--t)}
+.fallback{padding:12px}.fallbackTitle{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}.fallbackTitle strong{font-size:15px}.fallbackNote{font-size:12px;color:#5f6b7b;background:#eef5ff;border:1px solid #d7e6fb;padding:9px 10px;border-radius:9px;line-height:1.5;margin-bottom:10px}
+.view{display:none}.view.active{display:block}.browser{display:grid;grid-template-columns:250px 250px 330px minmax(350px,1fr);gap:10px;align-items:start}.panel{overflow:hidden}.panel h2{font-size:13px;margin:0;padding:12px 13px;border-bottom:1px solid var(--l);background:#fafcfe}.list{padding:7px;max-height:650px;overflow:auto;-webkit-overflow-scrolling:touch}.item{display:block;width:100%;text-align:left;border:1px solid transparent;background:transparent;border-radius:9px;padding:10px;margin:2px 0;color:var(--t)}.item.active{background:var(--bs);border-color:#b9dfdc;color:var(--b);font-weight:800}.item small{display:block;color:var(--m);font-weight:400;margin-top:2px}
+.detail{padding:13px}.title{font-size:21px;font-weight:900}.meta{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}.box{border:1px solid var(--l);border-radius:9px;padding:9px;background:#fbfcfe}.box span{display:block;color:var(--m);font-size:11px}.warning{font-size:12px;line-height:1.5;background:var(--warn);border:1px solid #ecd7ad;padding:9px;border-radius:9px;color:#6e4200}.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.field label{display:block;font-size:11px;color:var(--m);margin:0 0 3px}.full{grid-column:1/-1}textarea{min-height:72px;resize:vertical}.primary,.secondary,.danger{border-radius:9px;padding:10px 12px}.primary{border:0;background:var(--b);color:#fff;font-weight:800}.secondary{border:1px solid var(--l);background:#fff}.danger{border:1px solid #efc3c5;background:#fff7f7;color:#a3262a}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.usage{margin-top:13px;padding-top:10px;border-top:1px solid var(--l)}.usageRow{font-size:12px;padding:7px 0;border-bottom:1px dashed var(--l)}.empty{padding:20px;text-align:center;color:var(--m)}
+.tableWrap{overflow:auto;-webkit-overflow-scrolling:touch}table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:9px 10px;font-size:12px;border-bottom:1px solid #edf1f5;text-align:left;white-space:nowrap}th{background:#f7f9fc;position:sticky;top:0;z-index:1}.pill{font-size:11px;padding:3px 7px;border-radius:999px;background:#eef3f7}.ok{background:#e8f6f4;color:#0b6b67}.no{background:#fff1f1;color:#9d2b2f}.backup{display:grid;grid-template-columns:1fr 1fr;gap:12px}.card{padding:14px}.card h3{margin:0 0 8px}.muted{color:var(--m);font-size:12px}.foot{text-align:center;color:var(--m);font-size:11px;padding:16px}
+#interactiveApp{display:none}#jsError{display:none;margin:10px 0;padding:10px;border-radius:10px;background:#fff1f1;border:1px solid #efc3c5;color:#8b2328;font-size:12px;line-height:1.5}
+@media(max-width:1100px){.browser{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.app{padding:8px}header{padding:15px 14px;align-items:flex-start}h1{font-size:20px}header p{font-size:12px}.logo{width:52px;height:48px;min-width:52px}.byline{font-size:11px}.stats{grid-template-columns:1fr 1fr}.browser,.backup,.grid{grid-template-columns:1fr}.full{grid-column:auto}.toolbar{gap:7px}.nav{flex:1 1 auto;padding:10px 8px}.search{min-width:100%;order:10}.stat b{font-size:24px}.tableWrap{border-radius:10px}}
+@media print{.toolbar,.stats,.panel:not(.detailPanel),.foot,.fallbackNote{display:none!important}.browser{display:block}.detailPanel{border:0}.app{padding:0}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="logo">FCT</div>
+  <div><h1>FCT MSDS 안전관리</h1><p>설비 → 공정 → 약품 → MSDS 통합 조회</p><div class="dataReady" id="dataReady">✓ 기준 약품목록 69건 내장</div></div>
+  <div class="byline">By S.M Park</div>
+</header>
+<div class="stats">
+  <div class="stat"><b id="sEq">19</b><span>등록 설비</span></div>
+  <div class="stat"><b id="sProc">22</b><span>설비·공정 조합</span></div>
+  <div class="stat"><b id="sChem">59</b><span>고유 약품</span></div>
+  <div class="stat"><b id="sMsds">0</b><span>MSDS 등록 완료</span></div>
+</div>
+<div id="jsError"></div>
+
+<!-- JavaScript가 차단되는 iPhone/ChatGPT/파일 미리보기에서도 반드시 보이는 기본 조회 화면 -->
+<section id="staticFallback" class="fallback">
+  <div class="fallbackTitle"><strong>전체 약품 · 기준데이터 69건</strong><span class="pill ok">모바일 기본 조회</span></div>
+  <div class="fallbackNote">이 화면은 모바일 미리보기에서도 약품 목록이 보이도록 HTML에 직접 내장된 조회 화면입니다. 편집·검색·백업 기능은 JavaScript가 허용된 Safari/Chrome/PC 브라우저에서 활성화됩니다.</div>
+  <div class="tableWrap"><table><thead><tr><th>약품명</th><th>상태</th><th>규격</th><th>용기</th><th>부서</th><th>설비</th><th>공정</th><th>MSDS</th></tr></thead><tbody>
+<tr><td><b>GREASE</b></td><td>액체</td><td>500ml</td><td>PE</td><td>가공</td><td>MCT</td><td>가공</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>IPA</b></td><td>액체</td><td>20kg</td><td>PE</td><td>가공</td><td>초음파세척기</td><td>세척</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>습동면유</b></td><td>액체</td><td>20kg</td><td>스틸</td><td>가공</td><td>연삭기</td><td>가공</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>아세톤</b></td><td>액체</td><td>20kg</td><td>PE</td><td>가공</td><td>초음파세척기</td><td>세척</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>절삭유</b></td><td>액체</td><td>20kg</td><td>PE</td><td>가공</td><td>MCT</td><td>가공</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>절삭유</b></td><td>액체</td><td>20kg</td><td>PE</td><td>가공</td><td>연삭기</td><td>가공</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>APCU-2</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>Spray Etcher</td><td>Cu Etching</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>AP-CY200</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>PI Developer</td><td>PI Develop</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>APND-10</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>PR Developer</td><td>PR Develop</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>APTH-10</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>PI Developer</td><td>PI Develop</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>BORIC ACID</b></td><td>고체</td><td>1kg</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>니켈BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>CuSO4</b></td><td>고체</td><td>1kg</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>구리BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>DTH-2</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>Spin Cleaner</td><td>세라믹 전처리</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>DTH-2</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>Mask Cleaner</td><td>마스크 세정</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>DTH-2</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>Auto Stripper</td><td>PR, PI Strip</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>DTH-2</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>중탕 Wet Station</td><td>세라믹 전처리</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>DV-100S</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>PR Developer</td><td>PR Develop</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>Ferric Chloride</b></td><td>액체</td><td>3.8L</td><td>PE</td><td>박막</td><td>재생 Wet Station</td><td>재박막 에칭</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>GC-906</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>Spin Cleaner</td><td>세라믹 전처리</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>GC-906</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>Mask Cleaner</td><td>마스크 세정</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>H2SO4</b></td><td>액체</td><td>7kg</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>구리BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>HCl</b></td><td>액체</td><td>4kg</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>구리BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>HD-4110</b></td><td>액체</td><td>1kg</td><td>PE</td><td>박막</td><td>PI Spin Coater</td><td>PI coating</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>HD-7204</b></td><td>액체</td><td>1kg</td><td>PE</td><td>박막</td><td>PI Spin Coater</td><td>PI coating</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>HF</b></td><td>액체</td><td>3.8L</td><td>PE</td><td>박막</td><td>Spray Etcher</td><td>Ti Etching</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>HMDS</b></td><td>액체</td><td>1GAL</td><td>PE</td><td>박막</td><td>PR Spin Coater</td><td>PR coating</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>HMDS</b></td><td>액체</td><td>1GAL</td><td>PE</td><td>박막</td><td>PI Spin Coater</td><td>PI coating</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>IPA</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>Spin Cleaner</td><td>세라믹 전처리</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>IPA</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>Mask Cleaner</td><td>마스크 세정</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>KAu(CN)2</b></td><td>고체</td><td>100gr</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>금BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>Nickel Bromide</b></td><td>액체</td><td>25kg</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>니켈BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>Nickel sulfamate</b></td><td>액체</td><td>25kg</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>니켈BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>NS-AP</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>니켈BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>RY-5125</b></td><td>고체</td><td>200M</td><td>roll</td><td>박막</td><td>Laminator</td><td>DFR Lamination</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>SF-A</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>구리BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>SF-B</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>구리BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>SF-M</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>구리BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>SOFA-100</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>금BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>SP-1407</b></td><td>액체</td><td>19L</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>니켈BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>THB-126N</b></td><td>액체</td><td>1L</td><td>유리</td><td>박막</td><td>PR Spin Coater</td><td>PR coating</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>THB-151N</b></td><td>액체</td><td>1L</td><td>유리</td><td>박막</td><td>PR Spin Coater</td><td>PR coating</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>VL-A</b></td><td>액체</td><td>1L</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>구리BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>VL-B</b></td><td>액체</td><td>1L</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>구리BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>VL-C</b></td><td>액체</td><td>1L</td><td>PE</td><td>박막</td><td>EP 자동화</td><td>구리BATH</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>WBR-2050</b></td><td>고체</td><td>80M</td><td>roll</td><td>박막</td><td>Laminator</td><td>DFR Lamination</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>아세톤</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>Spin Cleaner</td><td>세라믹 전처리</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>아세톤</b></td><td>액체</td><td>20L</td><td>PE</td><td>박막</td><td>Mask Cleaner</td><td>마스크 세정</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>Ethanol</b></td><td>액체</td><td>18L</td><td>PE</td><td>소성</td><td>소성로</td><td>Sintering</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>H2</b></td><td>기체</td><td>-</td><td>-</td><td>소성</td><td>소성로</td><td>Sintering</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>N2</b></td><td>기체</td><td>-</td><td>-</td><td>소성</td><td>소성로</td><td>Sintering</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>Alumina 알루미나 파우더(Al2O3)</b></td><td>고체</td><td>25Kg</td><td>포대</td><td>전반</td><td>볼밀기</td><td>배치</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>BYK-111</b></td><td>고체</td><td>25kg</td><td>포대</td><td>전반</td><td>볼밀기</td><td>배치</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>DiButyl Phthalate (DBP)</b></td><td>액체</td><td>18L</td><td>PE</td><td>전반</td><td>볼밀기</td><td>배치</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>Ethanol 99.5%</b></td><td>액체</td><td>18L</td><td>PE</td><td>전반</td><td>볼밀기</td><td>배치</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>Ethyl alcohol 95%</b></td><td>액체</td><td>18L</td><td>PE</td><td>전반</td><td>볼밀기</td><td>배치</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>FERRO BINDER</b></td><td>고체</td><td>15Kg</td><td>포대</td><td>전반</td><td>볼밀기</td><td>배치</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>Magnesium Oxide(MgO) 산화마그네슘</b></td><td>고체</td><td>10Kg</td><td>포대</td><td>전반</td><td>볼밀기</td><td>배치</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>Mo PASTE(Paron-MP2) 89%</b></td><td>액체</td><td>1Kg</td><td>PE</td><td>전반</td><td>인쇄기</td><td>인쇄</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>MULLITE 몰라이트</b></td><td>고체</td><td>10Kg</td><td>포대</td><td>전반</td><td>볼밀기</td><td>배치</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>MULLITE 몰라이트 KCM (LINKER)</b></td><td>고체</td><td>10Kg</td><td>포대</td><td>전반</td><td>볼밀기</td><td>배치</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>PASTE(FCTP2)</b></td><td>액체</td><td>1Kg</td><td>PE</td><td>전반</td><td>인쇄기</td><td>인쇄</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>Paste(PCTP1)</b></td><td>액체</td><td>1Kg</td><td>PE</td><td>전반</td><td>인쇄기</td><td>인쇄</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>Paste(V1)</b></td><td>액체</td><td>1Kg</td><td>PE</td><td>전반</td><td>비아 충진기</td><td>인쇄</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>PVB BINDER</b></td><td>고체</td><td>20kg</td><td>포대</td><td>전반</td><td>볼밀기</td><td>배치</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>Silicon Dioxide (이산화규소)</b></td><td>고체</td><td>15Kg</td><td>포대</td><td>전반</td><td>볼밀기</td><td>배치</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>TOLUENE 99.5%</b></td><td>액체</td><td>18L</td><td>PE</td><td>전반</td><td>볼밀기</td><td>배치</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>산화이트륨(Yttrium(III) oxide)</b></td><td>고체</td><td>25kg</td><td>포대</td><td>전반</td><td>볼밀기</td><td>배치</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>산화크롬(Chromium(III) oxide)</b></td><td>고체</td><td>25kg</td><td>포대</td><td>전반</td><td>볼밀기</td><td>배치</td><td><span class="pill no">미등록</span></td></tr>
+<tr><td><b>이산화타이타늄(Titanium dioxide)</b></td><td>고체</td><td>20kg</td><td>포대</td><td>전반</td><td>볼밀기</td><td>배치</td><td><span class="pill no">미등록</span></td></tr>
+  </tbody></table></div>
+</section>
+
+<div id="interactiveApp">
+  <div class="toolbar"><button class="nav active" data-v="all">전체 약품</button><button class="nav" data-v="browser">설비/공정 조회</button><button class="nav" data-v="missing">MSDS 미등록</button><button class="nav" data-v="backup">백업/복원</button><div class="search"><input id="search" placeholder="약품명 · 설비 · 공정 검색"></div></div>
+  <section class="view" id="v-browser"><div class="browser">
+    <div class="panel"><h2>① 설비 선택</h2><div class="list" id="eqList"></div></div>
+    <div class="panel"><h2>② 공정 선택</h2><div class="list" id="prList"><div class="empty">설비를 선택하세요.</div></div></div>
+    <div class="panel"><h2>③ 사용 약품</h2><div class="list" id="chList"><div class="empty">공정을 선택하세요.</div></div></div>
+    <div class="panel detailPanel"><h2>④ 약품 / MSDS</h2><div class="detail" id="detail"><div class="empty">약품을 선택하세요.</div></div></div>
+  </div></section>
+  <section class="view active" id="v-all"><div class="toolbar"><select id="dept"><option value="">전체 부서</option></select><select id="state"><option value="">전체 상태</option><option>액체</option><option>고체</option><option>기체</option></select><span class="muted" id="count">표시 69건</span></div><div class="tableWrap"><table><thead><tr><th>약품명</th><th>상태</th><th>규격</th><th>용기</th><th>부서</th><th>설비</th><th>공정</th><th>MSDS</th></tr></thead><tbody id="allBody"></tbody></table></div></section>
+  <section class="view" id="v-missing"><div class="tableWrap"><table><thead><tr><th>약품명</th><th>사용 설비 수</th><th>사용처 수</th><th>상태</th></tr></thead><tbody id="missBody"></tbody></table></div></section>
+  <section class="view" id="v-backup"><div class="backup"><div class="card"><h3>MSDS 데이터 백업</h3><p class="muted">입력한 MSDS 상세정보만 JSON으로 저장합니다.</p><button class="primary" id="exp">JSON 백업 다운로드</button></div><div class="card"><h3>MSDS 데이터 복원</h3><input type="file" id="impFile" accept=".json,application/json"><div class="actions"><button class="secondary" id="imp">백업 복원</button><button class="danger" id="reset">MSDS 입력값 초기화</button></div></div></div></section>
+</div>
+<div class="foot">기준자료: IMG_9705.png · 안전정보는 반드시 최신 공급사 SDS 원문 기준으로 확인·등록하십시오.</div>
+</div>
+<noscript><div style="padding:12px;text-align:center;font-family:sans-serif;color:#8b2328">현재 뷰어에서 JavaScript가 차단되어 조회 전용으로 표시됩니다.</div></noscript>
+<script>
+(function(){
+'use strict';
+var RAW=[["GREASE","액체","500ml","PE","가공","MCT","가공"],["IPA","액체","20kg","PE","가공","초음파세척기","세척"],["습동면유","액체","20kg","스틸","가공","연삭기","가공"],["아세톤","액체","20kg","PE","가공","초음파세척기","세척"],["절삭유","액체","20kg","PE","가공","MCT","가공"],["절삭유","액체","20kg","PE","가공","연삭기","가공"],["APCU-2","액체","20L","PE","박막","Spray Etcher","Cu Etching"],["AP-CY200","액체","20L","PE","박막","PI Developer","PI Develop"],["APND-10","액체","20L","PE","박막","PR Developer","PR Develop"],["APTH-10","액체","20L","PE","박막","PI Developer","PI Develop"],["BORIC ACID","고체","1kg","PE","박막","EP 자동화","니켈BATH"],["CuSO4","고체","1kg","PE","박막","EP 자동화","구리BATH"],["DTH-2","액체","20L","PE","박막","Spin Cleaner","세라믹 전처리"],["DTH-2","액체","20L","PE","박막","Mask Cleaner","마스크 세정"],["DTH-2","액체","20L","PE","박막","Auto Stripper","PR, PI Strip"],["DTH-2","액체","20L","PE","박막","중탕 Wet Station","세라믹 전처리"],["DV-100S","액체","20L","PE","박막","PR Developer","PR Develop"],["Ferric Chloride","액체","3.8L","PE","박막","재생 Wet Station","재박막 에칭"],["GC-906","액체","20L","PE","박막","Spin Cleaner","세라믹 전처리"],["GC-906","액체","20L","PE","박막","Mask Cleaner","마스크 세정"],["H2SO4","액체","7kg","PE","박막","EP 자동화","구리BATH"],["HCl","액체","4kg","PE","박막","EP 자동화","구리BATH"],["HD-4110","액체","1kg","PE","박막","PI Spin Coater","PI coating"],["HD-7204","액체","1kg","PE","박막","PI Spin Coater","PI coating"],["HF","액체","3.8L","PE","박막","Spray Etcher","Ti Etching"],["HMDS","액체","1GAL","PE","박막","PR Spin Coater","PR coating"],["HMDS","액체","1GAL","PE","박막","PI Spin Coater","PI coating"],["IPA","액체","20L","PE","박막","Spin Cleaner","세라믹 전처리"],["IPA","액체","20L","PE","박막","Mask Cleaner","마스크 세정"],["KAu(CN)2","고체","100gr","PE","박막","EP 자동화","금BATH"],["Nickel Bromide","액체","25kg","PE","박막","EP 자동화","니켈BATH"],["Nickel sulfamate","액체","25kg","PE","박막","EP 자동화","니켈BATH"],["NS-AP","액체","20L","PE","박막","EP 자동화","니켈BATH"],["RY-5125","고체","200M","roll","박막","Laminator","DFR Lamination"],["SF-A","액체","20L","PE","박막","EP 자동화","구리BATH"],["SF-B","액체","20L","PE","박막","EP 자동화","구리BATH"],["SF-M","액체","20L","PE","박막","EP 자동화","구리BATH"],["SOFA-100","액체","20L","PE","박막","EP 자동화","금BATH"],["SP-1407","액체","19L","PE","박막","EP 자동화","니켈BATH"],["THB-126N","액체","1L","유리","박막","PR Spin Coater","PR coating"],["THB-151N","액체","1L","유리","박막","PR Spin Coater","PR coating"],["VL-A","액체","1L","PE","박막","EP 자동화","구리BATH"],["VL-B","액체","1L","PE","박막","EP 자동화","구리BATH"],["VL-C","액체","1L","PE","박막","EP 자동화","구리BATH"],["WBR-2050","고체","80M","roll","박막","Laminator","DFR Lamination"],["아세톤","액체","20L","PE","박막","Spin Cleaner","세라믹 전처리"],["아세톤","액체","20L","PE","박막","Mask Cleaner","마스크 세정"],["Ethanol","액체","18L","PE","소성","소성로","Sintering"],["H2","기체","","","소성","소성로","Sintering"],["N2","기체","","","소성","소성로","Sintering"],["Alumina 알루미나 파우더(Al2O3)","고체","25Kg","포대","전반","볼밀기","배치"],["BYK-111","고체","25kg","포대","전반","볼밀기","배치"],["DiButyl Phthalate (DBP)","액체","18L","PE","전반","볼밀기","배치"],["Ethanol 99.5%","액체","18L","PE","전반","볼밀기","배치"],["Ethyl alcohol 95%","액체","18L","PE","전반","볼밀기","배치"],["FERRO BINDER","고체","15Kg","포대","전반","볼밀기","배치"],["Magnesium Oxide(MgO) 산화마그네슘","고체","10Kg","포대","전반","볼밀기","배치"],["Mo PASTE(Paron-MP2) 89%","액체","1Kg","PE","전반","인쇄기","인쇄"],["MULLITE 몰라이트","고체","10Kg","포대","전반","볼밀기","배치"],["MULLITE 몰라이트 KCM (LINKER)","고체","10Kg","포대","전반","볼밀기","배치"],["PASTE(FCTP2)","액체","1Kg","PE","전반","인쇄기","인쇄"],["Paste(PCTP1)","액체","1Kg","PE","전반","인쇄기","인쇄"],["Paste(V1)","액체","1Kg","PE","전반","비아 충진기","인쇄"],["PVB BINDER","고체","20kg","포대","전반","볼밀기","배치"],["Silicon Dioxide (이산화규소)","고체","15Kg","포대","전반","볼밀기","배치"],["TOLUENE 99.5%","액체","18L","PE","전반","볼밀기","배치"],["산화이트륨(Yttrium(III) oxide)","고체","25kg","포대","전반","볼밀기","배치"],["산화크롬(Chromium(III) oxide)","고체","25kg","포대","전반","볼밀기","배치"],["이산화타이타늄(Titanium dioxide)","고체","20kg","포대","전반","볼밀기","배치"]];
+var KEY='FCT_MSDS_MASTER_V1';
+var master={}, eq='', proc='', chem='', storageOK=true;
+function el(id){return document.getElementById(id);}
+function safeText(v){return String(v==null?'':v);}
+function E(v){return safeText(v).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+function N(v){return safeText(v).replace(/^\s+|\s+$/g,'').toLowerCase();}
+function unique(arr){var out=[],i,v;for(i=0;i<arr.length;i++){v=arr[i];if(out.indexOf(v)<0)out.push(v);}return out;}
+function sortKo(arr){return arr.sort(function(a,b){try{return String(a).localeCompare(String(b),'ko');}catch(e){return String(a)<String(b)?-1:(String(a)>String(b)?1:0);}});}
+function load(){try{var t=window.localStorage.getItem(KEY);return t?JSON.parse(t):{};}catch(e){storageOK=false;return {};}}
+function save(){if(!storageOK){alert('현재 모바일 미리보기에서는 저장공간 사용이 제한됩니다. Safari/Chrome 또는 PC 브라우저에서 열어 저장해 주세요.');return false;}try{window.localStorage.setItem(KEY,JSON.stringify(master));stats();renderAll();renderMissing();return true;}catch(e){storageOK=false;alert('MSDS 저장공간을 사용할 수 없습니다. Safari/Chrome 또는 PC 브라우저에서 열어 주세요.');return false;}}
+function eqs(){var a=[],i;for(i=0;i<RAW.length;i++)a.push(RAW[i][5]);return sortKo(unique(a));}
+function procs(e){var a=[],i;for(i=0;i<RAW.length;i++)if(RAW[i][5]===e)a.push(RAW[i][6]);return sortKo(unique(a));}
+function chems(e,p){var a=[],i;for(i=0;i<RAW.length;i++)if(RAW[i][5]===e&&RAW[i][6]===p)a.push(RAW[i][0]);return sortKo(unique(a));}
+function uses(c){var a=[],i;for(i=0;i<RAW.length;i++)if(N(RAW[i][0])===N(c))a.push(RAW[i]);return a;}
+function key(c){return N(c);}
+function done(c){var m=master[key(c)];return !!(m&&m.cas&&m.revision&&m.hazard&&m.ppe&&m.firstAid&&m.storage);}
+function stats(){var combos=[],cs=[],i;for(i=0;i<RAW.length;i++){combos.push(RAW[i][5]+'|'+RAW[i][6]);cs.push(RAW[i][0]);}el('sEq').textContent=eqs().length;el('sProc').textContent=unique(combos).length;cs=unique(cs);el('sChem').textContent=cs.length;var n=0;for(i=0;i<cs.length;i++)if(done(cs[i]))n++;el('sMsds').textContent=n;}
+function item(text,sub,fn,active){var b=document.createElement('button');b.type='button';b.className='item'+(active?' active':'');b.innerHTML=E(text)+'<small>'+E(sub)+'</small>';b.addEventListener('click',fn,false);return b;}
+function renderEq(){var list=el('eqList'),es=eqs(),i,x;list.innerHTML='';for(i=0;i<es.length;i++){x=es[i];(function(xv){var names=[],j;for(j=0;j<RAW.length;j++)if(RAW[j][5]===xv)names.push(RAW[j][0]);list.appendChild(item(xv,unique(names).length+'개 약품',function(){eq=xv;proc='';chem='';renderEq();renderProc();el('chList').innerHTML='<div class="empty">공정을 선택하세요.</div>';el('detail').innerHTML='<div class="empty">약품을 선택하세요.</div>'; },eq===xv));})(x);}}
+function renderProc(){var list=el('prList'),ps=procs(eq),i,x;list.innerHTML='';for(i=0;i<ps.length;i++){x=ps[i];(function(xv){list.appendChild(item(xv,chems(eq,xv).length+'개 약품',function(){proc=xv;chem='';renderProc();renderChem();el('detail').innerHTML='<div class="empty">약품을 선택하세요.</div>'; },proc===xv));})(x);}}
+function renderChem(){var list=el('chList'),cs=chems(eq,proc),i,c,u,r;list.innerHTML='';for(i=0;i<cs.length;i++){c=cs[i];u=uses(c);r=u[0];var j;for(j=0;j<u.length;j++)if(u[j][5]===eq&&u[j][6]===proc){r=u[j];break;}(function(cv,rv){list.appendChild(item(cv,rv[1]+' · '+(rv[2]||'규격 미기재')+' · '+(done(cv)?'MSDS 완료':'MSDS 미등록'),function(){chem=cv;renderChem();renderDetail(cv);},chem===cv));})(c,r);}}
+function field(id,label,val,type,full){type=type||'text';full=!!full;if(type==='textarea')return '<div class="field '+(full?'full':'')+'"><label>'+label+'</label><textarea data-f="'+id+'">'+E(val||'')+'</textarea></div>';return '<div class="field '+(full?'full':'')+'"><label>'+label+'</label><input type="'+type+'" data-f="'+id+'" value="'+E(val||'')+'"></div>';}
+function renderDetail(c){var us=uses(c),r=us[0],i;for(i=0;i<us.length;i++)if(us[i][5]===eq&&us[i][6]===proc){r=us[i];break;}var m=master[key(c)]||{},h='';h+='<div class="title">'+E(c)+'</div><div>'+(done(c)?'<span class="pill ok">MSDS 등록 완료</span>':'<span class="pill no">MSDS 미등록/미완료</span>')+'</div>';h+='<div class="meta"><div class="box"><span>상태</span><b>'+E(r[1])+'</b></div><div class="box"><span>규격</span><b>'+E(r[2]||'-')+'</b></div><div class="box"><span>용기</span><b>'+E(r[3]||'-')+'</b></div><div class="box"><span>부서</span><b>'+E(r[4])+'</b></div><div class="box"><span>설비</span><b>'+E(r[5])+'</b></div><div class="box"><span>공정</span><b>'+E(r[6])+'</b></div></div>';h+='<div class="warning">⚠ MSDS 안전정보는 임의 추정하지 않습니다. 해당 제조사/공급사의 최신 SDS 원문을 확인하여 등록하세요.</div><div class="grid">';h+=field('cas','CAS No.',m.cas)+field('supplier','제조사/공급사',m.supplier)+field('revision','SDS 개정일',m.revision,'date')+field('ghs','GHS 분류/그림문자',m.ghs)+field('hazard','유해·위험성',m.hazard,'textarea',true)+field('ppe','보호구 / PPE',m.ppe,'textarea',true)+field('firstAid','응급조치',m.firstAid,'textarea',true)+field('storage','취급 및 저장방법',m.storage,'textarea',true)+field('spill','누출 시 조치',m.spill,'textarea',true)+field('fire','화재 시 조치',m.fire,'textarea',true)+field('sdsRef','SDS 문서번호/파일명',m.sdsRef,'text',true)+'</div><div class="actions"><button class="primary" id="saveMsds" type="button">MSDS 저장</button><button class="secondary" id="printBtn" type="button">현재 화면 인쇄</button></div><div class="usage"><b>전체 사용처 ('+us.length+')</b>';for(i=0;i<us.length;i++)h+='<div class="usageRow"><b>'+E(us[i][5])+'</b> → '+E(us[i][6])+' <span class="muted">('+E(us[i][4])+')</span></div>';h+='</div>';el('detail').innerHTML=h;var sb=el('saveMsds');if(sb)sb.addEventListener('click',function(){var o={},fs=document.querySelectorAll('[data-f]'),j;for(j=0;j<fs.length;j++)o[fs[j].getAttribute('data-f')]=safeText(fs[j].value).replace(/^\s+|\s+$/g,'');o.updatedAt=new Date().toISOString();master[key(c)]=o;if(save()){renderDetail(c);alert('MSDS 정보 저장 완료');}},false);var pb=el('printBtn');if(pb)pb.addEventListener('click',function(){window.print();},false);}
+function renderAll(){var q=N(el('search').value),d=el('dept').value,st=el('state').value,rs=[],i,r,h='';for(i=0;i<RAW.length;i++){r=RAW[i];if(d&&r[4]!==d)continue;if(st&&r[1]!==st)continue;if(q&&N(r[0]).indexOf(q)<0&&N(r[4]).indexOf(q)<0&&N(r[5]).indexOf(q)<0&&N(r[6]).indexOf(q)<0)continue;rs.push(r);}el('count').textContent='표시 '+rs.length+'건';for(i=0;i<rs.length;i++){r=rs[i];h+='<tr data-c="'+E(r[0])+'" data-e="'+E(r[5])+'" data-p="'+E(r[6])+'"><td><b>'+E(r[0])+'</b></td><td>'+E(r[1])+'</td><td>'+E(r[2]||'-')+'</td><td>'+E(r[3]||'-')+'</td><td>'+E(r[4])+'</td><td>'+E(r[5])+'</td><td>'+E(r[6])+'</td><td>'+(done(r[0])?'<span class="pill ok">완료</span>':'<span class="pill no">미등록</span>')+'</td></tr>';}el('allBody').innerHTML=h;var trs=el('allBody').getElementsByTagName('tr');for(i=0;i<trs.length;i++){trs[i].addEventListener('click',function(){jump(this.getAttribute('data-e'),this.getAttribute('data-p'),this.getAttribute('data-c'));},false);}}
+function renderMissing(){var cs=[],i,c,u,h='';for(i=0;i<RAW.length;i++)cs.push(RAW[i][0]);cs=sortKo(unique(cs));for(i=0;i<cs.length;i++){c=cs[i];if(done(c))continue;u=uses(c);var eqn=[],j;for(j=0;j<u.length;j++)eqn.push(u[j][5]);h+='<tr data-c="'+E(c)+'"><td><b>'+E(c)+'</b></td><td>'+unique(eqn).length+'</td><td>'+u.length+'</td><td><span class="pill no">입력 필요</span></td></tr>';}el('missBody').innerHTML=h;var trs=el('missBody').getElementsByTagName('tr');for(i=0;i<trs.length;i++)trs[i].addEventListener('click',function(){var u0=uses(this.getAttribute('data-c'))[0];jump(u0[5],u0[6],this.getAttribute('data-c'));},false);}
+function switchV(v){var vs=document.querySelectorAll('.view'),bs=document.querySelectorAll('.nav'),i;for(i=0;i<vs.length;i++)vs[i].className=vs[i].className.replace(/\s*active/g,'');var target=el('v-'+v);if(target)target.className+=' active';for(i=0;i<bs.length;i++){bs[i].className=bs[i].className.replace(/\s*active/g,'');if(bs[i].getAttribute('data-v')===v)bs[i].className+=' active';}if(v==='all')renderAll();if(v==='missing')renderMissing();}
+function jump(e,p,c){eq=e;proc=p;chem=c;renderEq();renderProc();renderChem();renderDetail(c);switchV('browser');}
+function bind(){var bs=document.querySelectorAll('.nav'),i;for(i=0;i<bs.length;i++)bs[i].addEventListener('click',function(){switchV(this.getAttribute('data-v'));},false);el('search').addEventListener('input',function(){if(el('v-all').className.indexOf('active')>=0)renderAll();},false);el('dept').addEventListener('change',renderAll,false);el('state').addEventListener('change',renderAll,false);el('exp').addEventListener('click',function(){try{var blob=new Blob([JSON.stringify({app:'FCT MSDS 안전관리',version:5,exportedAt:new Date().toISOString(),msds:master},null,2)],{type:'application/json'}),a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download='FCT_MSDS_백업_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(url);},1000);}catch(e){alert('이 모바일 미리보기에서는 백업 다운로드가 제한됩니다. Safari/Chrome 또는 PC에서 실행해 주세요.');}},false);el('imp').addEventListener('click',function(){var f=el('impFile').files&&el('impFile').files[0];if(!f){alert('백업 JSON 파일을 선택하세요.');return;}var rd=new FileReader();rd.onload=function(){try{var o=JSON.parse(rd.result);if(!o.msds)throw new Error('bad');master=o.msds;if(save()){renderAll();renderMissing();alert('복원 완료');}}catch(e){alert('올바른 백업 파일이 아닙니다.');}};rd.readAsText(f);},false);el('reset').addEventListener('click',function(){if(confirm('입력한 MSDS 상세정보를 모두 초기화할까요? 기준 약품목록은 유지됩니다.')){master={};try{window.localStorage.removeItem(KEY);}catch(e){}stats();renderAll();renderMissing();alert('초기화 완료');}},false);}
+function init(){master=load();stats();var ds=unique(RAW.map?RAW.map(function(r){return r[4];}):[]);sortKo(ds);var i,o;for(i=0;i<ds.length;i++){o=document.createElement('option');o.value=ds[i];o.textContent=ds[i];el('dept').appendChild(o);}bind();renderAll();renderMissing();var es=eqs();if(es.length){eq=es[0];var ps=procs(eq);proc=ps.length?ps[0]:'';var cs=proc?chems(eq,proc):[];chem=cs.length?cs[0]:'';}renderEq();renderProc();renderChem();if(chem)renderDetail(chem);el('interactiveApp').style.display='block';el('staticFallback').style.display='none';el('dataReady').textContent='✓ 기준 약품목록 '+RAW.length+'건 등록 완료'+(storageOK?'':' · 조회 전용');switchV('all');}
+window.onerror=function(msg){var e=el('jsError');if(e){e.style.display='block';e.textContent='모바일 실행 오류: '+msg+' · 아래 기본 약품목록은 계속 조회할 수 있습니다.';}var f=el('staticFallback');if(f)f.style.display='block';var a=el('interactiveApp');if(a)a.style.display='none';var b=el('dataReady');if(b)b.textContent='✓ 기준 약품목록 69건 내장 · 기본 조회 모드';return false;};
+try{init();}catch(err){window.onerror(err&&err.message?err.message:String(err));}
+})();
+</script>
+</body></html>
