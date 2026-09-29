@@ -13,9 +13,25 @@
 
 .admin-mode-note{font-size:12px;font-weight:700;color:#1766b1}.admin-only[hidden]{display:none!important}
 
+
+.lock-screen{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:#f3f6fa}
+.lock-card{width:min(420px,100%);background:white;border:1px solid #dce5ef;border-radius:18px;padding:30px;box-shadow:0 16px 50px #17324f22;text-align:center}
+.lock-card h1{margin:0 0 8px;font-size:28px;color:#102747}.lock-card p{margin:0 0 22px;color:#68778b}
+.lock-card input{width:100%;padding:14px;border:1px solid #cbd7e4;border-radius:10px;text-align:center;font-size:22px;letter-spacing:8px}
+.lock-card button{width:100%;margin-top:12px}.lock-msg{min-height:20px;margin-top:12px!important;font-size:13px;color:#c34d5d!important}
+body.locked .app{display:none!important}
 </style>
 </head>
-<body>
+<body class="locked">
+<div class="lock-screen" id="lockScreen">
+  <form class="lock-card" id="lockForm">
+    <h1>FCT 일정관리</h1>
+    <p>비밀번호를 입력하면 일정을 확인·수정할 수 있습니다.</p>
+    <input id="lockPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" aria-label="비밀번호">
+    <button class="primary" id="lockSubmit" type="submit">접속</button>
+    <p class="lock-msg" id="lockMsg"></p>
+  </form>
+</div>
 <div class="app">
   <aside class="side">
     <div class="brand"><img src="https://fjfnkh8fnj-a11y.github.io/FCT-MSDS/fct-logo-transparent.png" alt="FCT (주) 화인세라텍"></div>
@@ -109,8 +125,34 @@ function setCloud(text,state){$('#cloudStatus').dataset.state=state;$('#cloudSta
 function setAdminMode(on){adminUnlocked=Boolean(on);document.querySelectorAll('.admin-only').forEach(el=>el.hidden=!adminUnlocked);let note=document.querySelector('.public-detail-note');if(note)note.hidden=adminUnlocked;$('#adminButton').textContent=adminUnlocked?'관리자 ON · 로그아웃':'관리자 로그인'}
 async function adminRequest(action,state=null,pin=adminPin){let r=await fetch(ADMIN_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,pin,state})});let body=await r.json().catch(()=>({}));if(!r.ok)throw new Error(body.message||body.error||('HTTP '+r.status));return body}
 async function adminLogin(){let pin=prompt('관리자 PIN 4자리를 입력하세요.');if(pin===null)return;pin=String(pin).trim();if(!/^\d{6}$/.test(pin)){alert('관리자 PIN은 숫자 6자리입니다.');return}try{await adminRequest('verify',null,pin);adminPin=pin;setAdminMode(true);toast('관리자 모드가 활성화되었습니다.');render()}catch(err){adminPin='';setAdminMode(false);alert('관리자 PIN이 올바르지 않습니다.')}}
-async function api(path,options={}){let r=await fetch(SUPABASE_URL+path,{...options,headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json',...(options.headers||{})}});if(!r.ok)throw new Error(await r.text()||`HTTP ${r.status}`);if(r.status===204)return null;let t=await r.text();return t?JSON.parse(t):null}
-async function loadCloud(){setCloud('클라우드 연결 중','saving');try{let rows=await api(`/rest/v1/schedule_app_state?id=eq.${STATE_ID}&select=events,history,custom_holidays`);if(rows?.[0]){events=Array.isArray(rows[0].events)?rows[0].events:[];history=rows[0].history&&typeof rows[0].history==='object'?rows[0].history:{};customHolidays=rows[0].custom_holidays&&typeof rows[0].custom_holidays==='object'?rows[0].custom_holidays:{}}cloudReady=true;setCloud('클라우드 연결됨','ok');render()}catch(err){console.error(err);setCloud('연결 실패','error');$('#subtitle').textContent='클라우드 연결을 확인해 주세요.';render()}}
+async function loadCloud(pin){
+  setCloud('클라우드 연결 중','saving');
+  let body=await adminRequest('load',null,pin);
+  let s=body.state||{};
+  events=Array.isArray(s.events)?s.events:[];
+  history=s.history&&typeof s.history==='object'?s.history:{};
+  customHolidays=s.custom_holidays&&typeof s.custom_holidays==='object'?s.custom_holidays:{};
+  cloudReady=true;adminPin=pin;setAdminMode(true);
+  document.body.classList.remove('locked');$('#lockScreen').hidden=true;
+  setCloud('클라우드 연결됨','ok');render();
+}
+function setupLock(){
+  $('#lockForm').onsubmit=async e=>{
+    e.preventDefault();
+    let pin=$('#lockPin').value.trim(),btn=$('#lockSubmit');
+    $('#lockMsg').textContent='';
+    if(!/^\d{4}$/.test(pin)){ $('#lockMsg').textContent='비밀번호는 숫자 4자리입니다.'; return; }
+    btn.disabled=true;btn.textContent='확인 중...';
+    try{await loadCloud(pin)}
+    catch(err){adminPin='';$('#lockMsg').textContent=err.message||'비밀번호를 확인해 주세요.';$('#lockPin').select()}
+    finally{btn.disabled=false;btn.textContent='접속'}
+  };
+}
+function lockApp(){
+  adminPin='';adminUnlocked=false;cloudReady=false;events=[];history={};customHolidays={};
+  document.body.classList.add('locked');$('#lockScreen').hidden=false;$('#lockPin').value='';$('#lockMsg').textContent='';
+  $('#content').innerHTML='';setTimeout(()=>$('#lockPin').focus(),0);
+}
 function queueSave(){if(!cloudReady)return;clearTimeout(saveTimer);saveTimer=setTimeout(saveCloud,300)}
 async function saveCloud(){if(!adminUnlocked||!adminPin)return;setCloud('클라우드 저장 중','saving');try{await adminRequest('save',{events,history,custom_holidays:customHolidays});setCloud('클라우드 저장됨','ok')}catch(err){console.error(err);setCloud('저장 실패','error');if(/PIN|unauthorized|인증/i.test(err.message)){adminPin='';setAdminMode(false)}toast('클라우드 저장에 실패했습니다.')}}
 function toast(msg){let t=$('#toast');t.textContent=msg;t.style.display='block';clearTimeout(t._timer);t._timer=setTimeout(()=>t.style.display='none',2400)}
@@ -126,8 +168,8 @@ function toggleFields(){$('#timeFields').hidden=$('#timeMode').value!=='on';$('#
 function setupForms(){$('#adminButton').onclick=()=>{if(adminUnlocked){adminPin='';setAdminMode(false);toast('관리자 모드가 해제되었습니다.');render()}else adminLogin()};$('#dept').innerHTML=depts.map(d=>`<option>${d}</option>`).join('');$('#add').onclick=()=>{$('#eventForm').reset();toggleFields();$('#eventForm').elements.date.value=ymd(today);if(depts.includes(view))$('#dept').value=view;$('#eventModal').classList.add('open')};$('#eventCancel').onclick=()=>$('#eventModal').classList.remove('open');$('#eventModal').onclick=e=>{if(e.target.id==='eventModal')$('#eventModal').classList.remove('open')};$('#timeMode').onchange=toggleFields;$('#endMode').onchange=toggleFields;$('#repeatMode').onchange=toggleFields;['timeDigits','endDigits'].forEach(id=>$('#'+id).oninput=e=>e.target.value=e.target.value.replace(/\D/g,'').slice(0,4));$('#eventForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),td=String(f.get('timeDigits')||''),ed=String(f.get('endDigits')||''),count=Number(f.get('intervalCount'));if(f.get('timeMode')==='on'&&!/^([01]\d|2[0-3])[0-5]\d$/.test(td))return alert('시간을 4자리 숫자로 입력해 주세요.');if(f.get('endMode')==='on'&&!/^([01]\d|2[0-3])[0-5]\d$/.test(ed))return alert('종료 시간을 4자리 숫자로 입력해 주세요.');if(f.get('timeMode')==='on'&&f.get('endMode')==='on'&&ed<=td)return alert('종료 시간은 시작 시간보다 늦어야 합니다.');if(f.get('repeatMode')==='on'&&(!Number.isInteger(count)||count<1||count>99))return alert('반복 간격을 확인해 주세요.');let item={id:crypto.randomUUID?.()||String(Date.now()),dept:f.get('dept'),date:f.get('date'),repeat:f.get('repeatMode')==='on'?'interval':'none',intervalCount:f.get('repeatMode')==='on'?count:null,intervalUnit:f.get('repeatMode')==='on'?f.get('intervalUnit'):null,time:f.get('timeMode')==='on'?td.slice(0,2)+':'+td.slice(2):'',endTime:f.get('endMode')==='on'?ed.slice(0,2)+':'+ed.slice(2):'',name:String(f.get('name')||'').trim(),description:String(f.get('description')||'').trim()};if(!item.name||!valid(item.date))return;events.push(item);date=new Date(+item.date.slice(0,4),+item.date.slice(5,7)-1,1);$('#eventModal').classList.remove('open');render();queueSave();toast('일정이 등록되었습니다.')};$('#detailClose').onclick=()=>$('#detailModal').classList.remove('open');$('#completeForm').onsubmit=e=>{e.preventDefault();if(!selectedId)return;let f=new FormData(e.target),actual=f.get('completedDate');if(!valid(actual))return;history[selectedId]??=[];if(history[selectedId].some(r=>r.scheduledDate===selectedOccurrence&&r.actualDate===actual))return alert('같은 실시 기록이 이미 있습니다.');history[selectedId].push({scheduledDate:selectedOccurrence,actualDate:actual,note:String(f.get('note')||'').trim()});$('#detailModal').classList.remove('open');render();queueSave()};$('#holidayForm').elements.holidayDate.onchange=updateHolidayForm;$('#holidayCancel').onclick=()=>$('#holidayModal').classList.remove('open');$('#holidayForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),iso=f.get('holidayDate'),name=String(f.get('holidayName')||'').trim();if(!valid(iso)||!name)return;customHolidays[iso]=name;$('#holidayModal').classList.remove('open');date=new Date(+iso.slice(0,4),+iso.slice(5,7)-1,1);render();queueSave()};$('#holidayRemove').onclick=()=>{let iso=$('#holidayForm').elements.holidayDate.value;delete customHolidays[iso];$('#holidayModal').classList.remove('open');render();queueSave()};toggleFields()}
 function setupQr(){let made=false;$('#qrButton').onclick=()=>{$('#qrModal').classList.add('open');if(!made&&window.QRCode){new QRCode($('#qrcode'),{text:APP_URL,width:240,height:240,correctLevel:QRCode.CorrectLevel.M});made=true}};$('#qrClose').onclick=()=>$('#qrModal').classList.remove('open');$('#qrModal').onclick=e=>{if(e.target.id==='qrModal')$('#qrModal').classList.remove('open')}}
 const headers=['담당부서','기준일','시간','일정명','내용','반복주기','종료시간'];
-function setupExcel(){$('#download').onclick=()=>{if(!window.XLSX)return alert('엑셀 모듈을 불러오지 못했습니다.');let rows=events.filter(e=>!depts.includes(view)||e.dept===view).map(e=>({담당부서:e.dept,기준일:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:recurrenceLabel(e)||'한 번만',종료시간:e.endTime||''}));let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.21.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
-setAdminMode(false);setupForms();setupQr();setupExcel();loadCloud();
+function setupExcel(){$('#download').onclick=()=>{if(!window.XLSX)return alert('엑셀 모듈을 불러오지 못했습니다.');let rows=events.filter(e=>!depts.includes(view)||e.dept===view).map(e=>({담당부서:e.dept,기준일:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:recurrenceLabel(e)||'한 번만',종료시간:e.endTime||''}));let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.22.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
+setAdminMode(false);setupForms();setupQr();setupExcel();setupLock();setTimeout(()=>$('#lockPin').focus(),0);
 })();
 
 </script>
