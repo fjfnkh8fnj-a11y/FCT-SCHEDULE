@@ -155,6 +155,8 @@ body.locked .app{display:none!important}
       <div class="visit-key"><span class="req-badge">필수</span>&nbsp;대표자 연락처</div>
       <div class="visit-cell"><input name="phone" inputmode="tel" maxlength="30" required placeholder="010-0000-0000"></div>
 
+      <div class="visit-key"><span class="req-badge">필수</span>&nbsp;담당부서</div>
+      <div class="visit-cell"><select name="dept" id="visitDept" required><option value="">선택</option><option value="품질">품질</option><option value="박막">박막</option><option value="전반">전반</option><option value="가공">가공</option><option value="소성">소성</option><option value="경영지원">경영지원</option></select></div>
       <div class="visit-key"><span class="req-badge">필수</span>&nbsp;담당자</div>
       <div class="visit-cell"><input name="manager" maxlength="40" required></div>
       <div class="visit-key">출입증 지급</div>
@@ -215,20 +217,23 @@ body.locked .app{display:none!important}
       <div class="utility-key"><span class="req-badge">필수</span>&nbsp;6. 작업장소</div>
       <div class="utility-cell"><input name="location" type="text" maxlength="120" required placeholder="예) 화성사업장 생산1동 유틸리티실"></div>
 
-      <div class="utility-key"><span class="req-badge">필수</span>&nbsp;7. 작업담당자</div>
-      <div class="utility-cell"><input name="manager" type="text" maxlength="60" required placeholder="예) 설비관리팀 / 홍길동"></div>
+      <div class="utility-key"><span class="req-badge">필수</span>&nbsp;7. 담당부서</div>
+      <div class="utility-cell"><select name="dept" id="utilityDept" required><option value="">선택</option><option value="품질">품질</option><option value="박막">박막</option><option value="전반">전반</option><option value="가공">가공</option><option value="소성">소성</option><option value="경영지원">경영지원</option></select></div>
 
-      <div class="utility-key">8. 작업업체</div>
+      <div class="utility-key"><span class="req-badge">필수</span>&nbsp;8. 작업담당자</div>
+      <div class="utility-cell"><input name="manager" type="text" maxlength="60" required placeholder="예) 홍길동"></div>
+
+      <div class="utility-key">9. 작업업체</div>
       <div class="utility-cell"><input name="company" type="text" maxlength="100" placeholder="외주 작업 시 업체명 및 작업자 기재 (해당 없을 시 공란)"></div>
 
-      <div class="utility-key"><span class="req-badge">필수</span>&nbsp;9. 유틸리티 차단 여부</div>
+      <div class="utility-key"><span class="req-badge">필수</span>&nbsp;10. 유틸리티 차단 여부</div>
       <div class="utility-cell"><div class="utility-options">
         <label><input type="radio" name="shutdown" value="차단 필요" required>차단 필요</label>
         <label><input type="radio" name="shutdown" value="부분 차단">부분 차단</label>
         <label><input type="radio" name="shutdown" value="차단 없음">차단 없음</label>
       </div></div>
 
-      <div class="utility-key">10. 관련 부서 협의</div>
+      <div class="utility-key">11. 관련 부서 협의</div>
       <div class="utility-cell"><div class="utility-options" id="utilityDepartments">
         <label><input type="checkbox" name="departments" value="전반">전반</label>
         <label><input type="checkbox" name="departments" value="박막">박막</label>
@@ -238,7 +243,7 @@ body.locked .app{display:none!important}
         <label><input type="checkbox" name="departments" value="경영지원">경영지원</label>
       </div></div>
 
-      <div class="utility-key">11. 비고</div>
+      <div class="utility-key">12. 비고</div>
       <div class="utility-cell"><textarea name="note" maxlength="500" placeholder="기타 특이사항"></textarea></div>
     </div>
     <div class="actions"><button class="danger" type="button" id="utilityDelete" hidden>삭제</button><span style="flex:1"></span><button class="secondary" type="button" id="utilityCancel">취소</button><button class="primary" id="utilitySubmit">등록</button></div>
@@ -673,7 +678,7 @@ const headers=['담당부서','날짜','시간','일정명','내용','반복주�
 function setupExcel(){$('#download').onclick=()=>{if(!window.XLSX)return alert('엑셀 모듈을 불러오지 못했습니다.');if(view==='출입·작업관리'){
   let visitRows=visits.slice().sort((a,b)=>(a.startDate||'').localeCompare(b.startDate||'')).map(v=>({업체명:v.company,방문시작일:v.startDate,방문종료일:v.endDate,시작시간:v.startTime||'',종료시간:v.endTime||'',방문인원:v.headcount||1,방문대표자:v.representative||'',대표자연락처:v.phone||'',담당자:v.manager||'',출입증지급:v.badgeStatus||'미지급',출입구역:(v.zones||[]).join(', '),신청사유:v.reason||''}));
   let utilityRows=utilityWorks.slice().sort((a,b)=>(a.workDate||'').localeCompare(b.workDate||'')).map(w=>({작업명:w.workName,작업대상유틸리티:(w.targets||[]).join(', '),작업예정일:w.workDate,시작시간:w.startTime||'',종료시간:w.endTime||'',작업내용:w.workContent||'',작업장소:w.location||'',작업담당자:w.manager||'',작업업체:w.company||'',유틸리티차단여부:w.shutdown||'',관련부서협의:(w.departments||[]).join(', '),비고:w.note||''}));
-  let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(visitRows),'방문업체');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(utilityRows),'유틸리티작업');XLSX.writeFile(wb,'FCT_출입작업관리_rev.26.xlsx');return}let rows=events.filter(e=>!depts.includes(view)||e.dept===view).map(e=>({담당부서:e.dept,날짜:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:recurrenceLabel(e)||'한 번만',종료시간:e.endTime||''}));let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.26.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['날짜']||r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
+  let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(visitRows),'방문업체');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(utilityRows),'유틸리티작업');XLSX.writeFile(wb,'FCT_출입작업관리_rev.27.xlsx');return}let rows=events.filter(e=>!depts.includes(view)||e.dept===view).map(e=>({담당부서:e.dept,날짜:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:recurrenceLabel(e)||'한 번만',종료시간:e.endTime||''}));let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.27.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['날짜']||r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
 setAdminMode(false);setupForms();setupVisits();setupUtilities();setupBulkDelete();setupQr();setupExcel();setupLock();setTimeout(()=>$('#lockPin').focus(),0);
 })();
 
