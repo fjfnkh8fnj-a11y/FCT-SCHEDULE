@@ -90,8 +90,6 @@ body.locked .app{display:none!important}
 (()=>{
 'use strict';
 const SUPABASE_URL='https://clmcenjnujrtuyjwrnim.supabase.co';
-const SUPABASE_KEY='sb_publishable_5M5AKe4S5Rq2A8UBwoJPNQ_Cs6atlgj';
-const STATE_ID='main';
 const APP_URL='https://fjfnkh8fnj-a11y.github.io/FCT-SCHEDULE/';
 const ADMIN_API=SUPABASE_URL+'/functions/v1/fct-schedule-admin';
 const depts=['품질','박막','전반','가공','소성','경영지원'];
@@ -115,7 +113,6 @@ function detailAttrs(e,iso=e.date){return `data-detail="${esc(e.id)}" data-occur
 function setCloud(text,state){$('#cloudStatus').dataset.state=state;$('#cloudStatusText').textContent=text}
 function setAdminMode(on){adminUnlocked=Boolean(on);document.querySelectorAll('.admin-only').forEach(el=>el.hidden=!adminUnlocked);$('#adminButton').textContent='로그아웃'}
 async function adminRequest(action,state=null,pin=adminPin){let r=await fetch(ADMIN_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,pin,state})});let body=await r.json().catch(()=>({}));if(!r.ok)throw new Error(body.message||body.error||('HTTP '+r.status));return body}
-async function adminLogin(){let pin=prompt('관리자 PIN 4자리를 입력하세요.');if(pin===null)return;pin=String(pin).trim();if(!/^\d{6}$/.test(pin)){alert('관리자 PIN은 숫자 6자리입니다.');return}try{await adminRequest('verify',null,pin);adminPin=pin;setAdminMode(true);toast('관리자 모드가 활성화되었습니다.');render()}catch(err){adminPin='';setAdminMode(false);alert('관리자 PIN이 올바르지 않습니다.')}}
 async function loadCloud(pin){
   setCloud('클라우드 연결 중','saving');
   let body=await adminRequest('load',null,pin);
