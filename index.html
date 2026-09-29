@@ -355,7 +355,7 @@ function setupVisits(){
     let value=e.target.value,cur=vendors.find(v=>v.id===selectedVendorId);
     if(cur&&normVendor(cur.company)!==normVendor(value)){selectedVendorId=null;$('#vendorMatchNote').textContent=''}
     let exact=findVendorByName(value);
-    if(exact&&exact.id!==selectedVendorId)selectVendor(exact.id,true);
+    if(exact){if(exact.id!==selectedVendorId)selectVendor(exact.id,true);return}
     showVendorSuggestions(value);
   };
   $('#vendorSuggestions').onclick=e=>{let b=e.target.closest('[data-vendor-id]');if(b)selectVendor(b.dataset.vendorId,true)};
