@@ -91,6 +91,17 @@ body.locked .app{display:none!important}
 .adjacent-month-btn{border:1px solid #b9cbe0;background:#edf5ff;color:#245f9e;border-radius:16px;padding:5px 9px;font-size:11px;font-weight:800;cursor:pointer}
 .adjacent-month-btn:hover{background:#e1efff}
 @media(max-width:700px){.week-head{align-items:flex-start;flex-wrap:wrap}.adjacent-months{width:100%;justify-content:flex-start}.adjacent-month-btn{padding:5px 8px}}
+
+.event-detail-grid{display:grid;grid-template-columns:95px 1fr;border:1px solid #dce5ef;border-right:0;border-bottom:0;margin-top:14px}
+.event-detail-grid dt,.event-detail-grid dd{margin:0;padding:10px;border-right:1px solid #dce5ef;border-bottom:1px solid #dce5ef}
+.event-detail-grid dt{background:#f2f6fa;font-weight:800;color:#40536b}.event-detail-grid dd{background:white}
+.history-panel{margin-top:20px;border-top:2px solid #dce6ef;padding-top:14px}.history-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.history-panel-head h3{margin:0;font-size:17px}.history-empty{padding:16px;text-align:center;background:#f7f9fb;border-radius:9px;color:#718096}
+.history-entry{display:grid;grid-template-columns:105px 1fr auto;gap:10px;align-items:start;padding:11px 0;border-top:1px solid #e7edf3}
+.history-entry:first-child{border-top:0}.history-date{font-weight:800;color:#26415f}.history-note{font-size:13px;color:#5f6f82;white-space:pre-wrap}
+.history-actions{display:flex;gap:6px}.history-actions button{padding:6px 9px;font-size:12px}
+@media(max-width:600px){.event-detail-grid{grid-template-columns:82px 1fr}.history-entry{grid-template-columns:82px 1fr}.history-actions{grid-column:2;justify-content:flex-start}}
+
 </style>
 </head>
 <body class="locked">
@@ -150,6 +161,41 @@ body.locked .app{display:none!important}
   </form>
 </div>
 
+
+
+<div class="modal" id="eventDetailModal">
+  <div class="dialog" style="width:min(650px,100%)">
+    <h2 id="eventDetailTitle">일정 상세</h2>
+    <p id="eventDetailHelp">일정 정보와 과거 이력을 확인할 수 있습니다.</p>
+    <dl class="event-detail-grid" id="eventDetailGrid"></dl>
+    <section class="history-panel">
+      <div class="history-panel-head">
+        <h3>과거 이력</h3>
+        <button class="secondary" type="button" id="historyAdd">＋ 과거 이력 추가</button>
+      </div>
+      <div id="eventHistoryList"></div>
+    </section>
+    <div class="actions">
+      <button class="secondary" type="button" id="eventDetailClose">닫기</button>
+      <button class="primary" type="button" id="eventDetailEdit">일정 수정</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="historyModal">
+  <form class="dialog" id="historyForm">
+    <h2 id="historyModalTitle">과거 이력 추가</h2>
+    <p id="historyModalHelp">실제 실시·교육·점검 등을 수행한 날짜를 기록하세요.</p>
+    <label class="field required-field">이력 날짜 <span class="req-badge">필수</span><input name="historyDate" type="date" required></label>
+    <label class="field">비고<textarea name="historyNote" maxlength="500" placeholder="예: 관리책임자 교육 수료 / 측정 완료"></textarea></label>
+    <div class="actions">
+      <button class="danger" type="button" id="historyDelete" hidden>삭제</button>
+      <span style="flex:1"></span>
+      <button class="secondary" type="button" id="historyCancel">취소</button>
+      <button class="primary" id="historySubmit">저장</button>
+    </div>
+  </form>
+</div>
 
 <div class="modal" id="visitModal">
   <form class="dialog visit-dialog" id="visitForm">
@@ -308,7 +354,7 @@ const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const valid=iso=>/^\d{4}-\d{2}-\d{2}$/.test(iso)&&!Number.isNaN(Date.parse(iso+'T12:00:00'));
 let date=new Date(today.getFullYear(),today.getMonth(),1),view='전체 일정';
-let events=[],history={},customHolidays={},vendors=[],visits=[],utilityWorks=[],editingId=null,editingVisitId=null,editingUtilityId=null,selectedVendorId=null,saveTimer=null,cloudReady=false,adminUnlocked=false,adminPin='';
+let events=[],history={},customHolidays={},vendors=[],visits=[],utilityWorks=[],editingId=null,detailEventId=null,editingHistoryId=null,editingVisitId=null,editingUtilityId=null,selectedVendorId=null,saveTimer=null,cloudReady=false,adminUnlocked=false,adminPin='';
 const officialHolidays={2026:{'01-01':'신정','02-16':'설날 연휴','02-17':'설날','02-18':'설날 연휴','03-01':'삼일절','03-02':'대체공휴일','05-01':'노동절','05-05':'어린이날','05-24':'부처님오신날','05-25':'대체공휴일','06-03':'지방선거일','06-06':'현충일','07-17':'제헌절','08-15':'광복절','08-17':'대체공휴일','09-24':'추석 연휴','09-25':'추석','09-26':'추석 연휴','10-03':'개천절','10-05':'대체공휴일','10-09':'한글날','12-25':'성탄절'},2027:{'01-01':'신정','02-06':'설날 연휴','02-07':'설날','02-08':'설날 연휴','02-09':'대체공휴일','03-01':'삼일절','05-01':'노동절','05-03':'대체공휴일','05-05':'어린이날','05-13':'부처님오신날','06-06':'현충일','07-17':'제헌절','07-19':'대체공휴일','08-15':'광복절','08-16':'대체공휴일','09-14':'추석 연휴','09-15':'추석','09-16':'추석 연휴','10-03':'개천절','10-04':'대체공휴일','10-09':'한글날','10-11':'대체공휴일','12-25':'성탄절','12-27':'대체공휴일'}};
 const fixedHolidays={'01-01':'신정','03-01':'삼일절','05-01':'노동절','05-05':'어린이날','06-06':'현충일','07-17':'제헌절','08-15':'광복절','10-03':'개천절','10-09':'한글날','12-25':'성탄절'};
 function holidayName(iso){let y=Number(iso.slice(0,4));return customHolidays[iso]||officialHolidays[y]?.[iso.slice(5)]||(y>2027?fixedHolidays[iso.slice(5)]:'')||''}
@@ -362,7 +408,7 @@ function setupLock(){
   };
 }
 function lockApp(){
-  adminPin='';adminUnlocked=false;cloudReady=false;events=[];history={};customHolidays={};vendors=[];visits=[];utilityWorks=[];editingVisitId=null;editingUtilityId=null;selectedVendorId=null;
+  adminPin='';adminUnlocked=false;cloudReady=false;events=[];history={};customHolidays={};vendors=[];visits=[];utilityWorks=[];detailEventId=null;editingHistoryId=null;editingVisitId=null;editingUtilityId=null;selectedVendorId=null;
   document.body.classList.add('locked');$('#lockScreen').hidden=false;$('#lockPin').value='';$('#lockMsg').textContent='';
   $('#content').innerHTML='';setTimeout(()=>$('#lockPin').focus(),0);
 }
@@ -444,6 +490,94 @@ function setupBulkDelete(){
     }
     $('#bulkDeleteModal').classList.remove('open');render();queueSave();toast(`${selected.length}건을 삭제했습니다.`);
   };
+}
+
+
+function normalizeHistoryEntries(eventId){
+  let raw=history?.[eventId];
+  if(!raw)return [];
+  let arr=Array.isArray(raw)?raw:[raw];
+  return arr.map((x,i)=>{
+    if(typeof x==='string')return{id:'legacy-'+i+'-'+x,date:x,note:''};
+    if(!x||typeof x!=='object')return null;
+    let dt=String(x.date||x.historyDate||x.performedDate||x.completedDate||'').slice(0,10);
+    return{id:String(x.id||('legacy-'+i+'-'+dt)),date:dt,note:String(x.note||x.memo||x.description||'')};
+  }).filter(x=>x&&valid(x.date)).sort((a,b)=>b.date.localeCompare(a.date));
+}
+function storeHistoryEntries(eventId,entries){
+  history[eventId]=entries.map(x=>({id:x.id,date:x.date,note:x.note||''}));
+  if(!history[eventId].length)delete history[eventId];
+}
+function renderEventHistory(){
+  let box=$('#eventHistoryList');if(!box||!detailEventId)return;
+  let rows=normalizeHistoryEntries(detailEventId);
+  if(!rows.length){box.innerHTML='<div class="history-empty">등록된 과거 이력이 없습니다.</div>';return}
+  box.innerHTML=rows.map(x=>`<div class="history-entry"><div class="history-date">${esc(x.date)}</div><div class="history-note">${esc(x.note||'비고 없음')}</div><div class="history-actions"><button class="secondary" type="button" data-history-edit="${esc(x.id)}">수정</button><button class="danger" type="button" data-history-delete="${esc(x.id)}">삭제</button></div></div>`).join('');
+}
+function eventDetailOpen(id){
+  let item=events.find(x=>x.id===id);if(!item)return;
+  detailEventId=id;editingHistoryId=null;
+  $('#eventDetailTitle').textContent=item.name||'일정 상세';
+  $('#eventDetailHelp').textContent='일정 정보와 과거 이력을 확인할 수 있습니다.';
+  let repeat=recurrenceLabel(item)||'반복 없음';
+  $('#eventDetailGrid').innerHTML=
+    '<dt>담당부서</dt><dd>'+esc(item.dept||'-')+'</dd>'+
+    '<dt>기준 날짜</dt><dd>'+esc(item.date||'-')+'</dd>'+
+    '<dt>시간</dt><dd>'+esc(timeLabel(item)||'지정 없음')+'</dd>'+
+    '<dt>반복주기</dt><dd>'+esc(repeat)+'</dd>'+
+    '<dt>내용</dt><dd>'+esc(item.description||'-')+'</dd>';
+  renderEventHistory();
+  $('#eventDetailModal').classList.add('open');
+}
+function historyOpen(id=null){
+  if(!detailEventId)return;
+  editingHistoryId=id;
+  let f=$('#historyForm');f.reset();
+  $('#historyDelete').hidden=!id;
+  if(id){
+    let x=normalizeHistoryEntries(detailEventId).find(r=>r.id===id);if(!x)return;
+    $('#historyModalTitle').textContent='과거 이력 수정';$('#historySubmit').textContent='수정 저장';
+    f.elements.historyDate.value=x.date;f.elements.historyNote.value=x.note||'';
+  }else{
+    $('#historyModalTitle').textContent='과거 이력 추가';$('#historySubmit').textContent='저장';
+    f.elements.historyDate.value=ymd(today);
+  }
+  $('#historyModal').classList.add('open');
+}
+function setupEventDetail(){
+  $('#eventDetailClose').onclick=()=>$('#eventDetailModal').classList.remove('open');
+  $('#eventDetailModal').onclick=e=>{if(e.target.id==='eventDetailModal')$('#eventDetailModal').classList.remove('open')};
+  $('#eventDetailEdit').onclick=()=>{let id=detailEventId;if(!id)return;$('#eventDetailModal').classList.remove('open');editOpen(id)};
+  $('#historyAdd').onclick=()=>historyOpen();
+  $('#eventHistoryList').onclick=e=>{
+    let edit=e.target.closest('[data-history-edit]');if(edit){historyOpen(edit.dataset.historyEdit);return}
+    let del=e.target.closest('[data-history-delete]');if(del){deleteHistoryEntry(del.dataset.historyDelete)}
+  };
+  $('#historyCancel').onclick=()=>$('#historyModal').classList.remove('open');
+  $('#historyModal').onclick=e=>{if(e.target.id==='historyModal')$('#historyModal').classList.remove('open')};
+  $('#historyDelete').onclick=()=>{if(editingHistoryId)deleteHistoryEntry(editingHistoryId,true)};
+  $('#historyForm').onsubmit=e=>{
+    e.preventDefault();if(!detailEventId)return;
+    let f=new FormData(e.target),dt=String(f.get('historyDate')||''),note=String(f.get('historyNote')||'').trim();
+    if(!valid(dt))return alert('이력 날짜를 확인해 주세요.');
+    let rows=normalizeHistoryEntries(detailEventId);
+    if(editingHistoryId){
+      let idx=rows.findIndex(x=>x.id===editingHistoryId);if(idx<0)return;
+      rows[idx]={id:editingHistoryId,date:dt,note};
+    }else{
+      rows.push({id:newId(),date:dt,note});
+    }
+    storeHistoryEntries(detailEventId,rows);
+    editingHistoryId=null;$('#historyModal').classList.remove('open');renderEventHistory();queueSave();toast('과거 이력이 저장되었습니다.');
+  };
+}
+function deleteHistoryEntry(id,fromModal=false){
+  if(!detailEventId)return;
+  if(!confirm('이 과거 이력을 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.'))return;
+  let rows=normalizeHistoryEntries(detailEventId).filter(x=>x.id!==id);
+  storeHistoryEntries(detailEventId,rows);
+  if(fromModal)$('#historyModal').classList.remove('open');
+  editingHistoryId=null;renderEventHistory();queueSave();toast('과거 이력을 삭제했습니다.');
 }
 
 function openEventNew(){
@@ -754,7 +888,7 @@ function setupVisits(){
 
 function render(){nav();configurePrimaryAction();if(view==='출입·작업관리'){renderManagementView();return}$('#title').textContent=view;$('#subtitle').textContent=view==='연간일정'?`${date.getFullYear()}년 전체 부서의 월별 일정`:`${date.getFullYear()}년 ${date.getMonth()+1}월 · ${view==='전체 일정'?'전 부서 + 방문·유틸리티 일정':view+' 일정'}`;if(!cloudReady&&!events.length){$('#content').innerHTML='<div class="card below"><h2>클라우드 일정을 불러오는 중입니다</h2></div>';return}let y=date.getFullYear(),m=date.getMonth();if(view==='연간일정'){let rows=events.map(e=>`<tr><td>${badge(e)}</td><td><span class="detail-link" ${detailAttrs(e)}>${timeLabel(e)?esc(timeLabel(e))+' · ':''}${esc(e.name)}</span><br><small class="muted">${esc(e.description||'')} ${recurrenceLabel(e)?'· '+recurrenceLabel(e):''}</small></td>${Array.from({length:12},(_,i)=>{let hit=occurrences(`${y}-${pad(i+1)}-01`,`${y}-${pad(i+1)}-31`).some(o=>o.id===e.id);return `<td>${hit?'<span class="mark">●</span>':''}</td>`}).join('')}</tr>`).join('');$('#content').innerHTML=`<section class="card calendar"><div class="calhead"><h2>${y}년 연간일정</h2><div class="controls"><button id="prev" type="button">‹</button><button id="now" type="button">올해</button><button id="next" type="button">›</button></div></div><div class="annualwrap"><table class="annualtable"><thead><tr><th>담당 부서</th><th>업무 / 일정</th>${Array.from({length:12},(_,i)=>`<th>${i+1}월</th>`).join('')}</tr></thead><tbody>${rows||'<tr><td colspan="14" class="empty">등록된 일정이 없습니다.</td></tr>'}</tbody></table></div></section>`;$('#prev').onclick=()=>{date.setFullYear(y-1);render()};$('#next').onclick=()=>{date.setFullYear(y+1);render()};$('#now').onclick=()=>{date=new Date(today.getFullYear(),today.getMonth(),1);render()};bindDetails();return}
 let list=filtered(occurrences(`${y}-${pad(m+1)}-01`,`${y}-${pad(m+1)}-${pad(new Date(y,m+1,0).getDate())}`));let first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),count=Math.ceil((first+days)/7)*7;let cells=Array.from({length:count},(_,i)=>{let d=new Date(y,m,i-first+1),iso=ymd(d),mine=list.filter(e=>e.date===iso),h=holidayName(iso);return `<div class="day ${d.getMonth()!==m?'out':''} ${d.getDay()===0?'sunday':d.getDay()===6?'saturday':''} ${h?'holiday':''} ${iso===ymd(today)?'today':''}"><span class="num">${d.getDate()}</span>${h?`<span class="holiday-name" title="${esc(h)}">${esc(h)}</span>`:''}${mine.length?`<span class="mobile-count">${mine.length}건</span>`:''}${mine.map(e=>`<div class="event" ${detailAttrs(e,iso)} style="--c:${e.color||colors[depts.indexOf(e.dept)]||'#586c84'}" title="${esc(e.description||e.name)}">${view==='전체 일정'?esc(e.dept)+' · ':''}${timeLabel(e)?esc(timeLabel(e))+' ':''}${esc(e.name)}</div>`).join('')}</div>`}).join('');let ws=new Date(today);ws.setDate(today.getDate()-(today.getDay()+2)%7);let we=new Date(ws);we.setDate(ws.getDate()+7);let nwe=new Date(we);nwe.setDate(we.getDate()+7);let week=filtered(occurrences(ymd(ws),ymd(new Date(we-86400000)))),next=filtered(occurrences(ymd(we),ymd(new Date(nwe-86400000))));let agenda=arr=>arr.length?arr.map(e=>`<div class="weekitem"><div class="date">${esc(e.date.slice(5))}</div><div>${badge(e)}<strong class="detail-link" ${detailAttrs(e)}>${timeLabel(e)?esc(timeLabel(e))+' · ':''}${esc(e.name)}</strong><p>${esc(e.description||'상세 내용 없음')}</p></div></div>`).join(''):'<div class="empty">등록된 일정이 없습니다.</div>';$('#content').innerHTML=`<section class="card calendar"><div class="calhead"><h2>${y}년 ${m+1}월</h2><div class="controls"><button id="prev" type="button">‹</button><button id="now" type="button">이번 달</button><button id="next" type="button">›</button>${adminUnlocked?'<button id="holidayButton" type="button">공휴일 관리</button>':''}</div></div>${y>2027?'<p class="status-note">2028년 이후는 고정일 공휴일만 기본 표시합니다. 음력·대체공휴일은 추가해 주세요.</p>':''}<div class="grid">${['일','월','화','수','목','금','토'].map(d=>`<div class="weekday">${d}</div>`).join('')}${cells}</div></section><section class="card below mobile-agenda"><h2>${m+1}월 일정 목록</h2>${agenda(list)}</section><section class="card below"><h2>금주 일정 <small class="muted">${ymd(ws).slice(5)} ~ ${ymd(new Date(we-86400000)).slice(5)}</small></h2>${agenda(week)}</section><section class="card below"><h2>차주 일정 <small class="muted">${ymd(we).slice(5)} ~ ${ymd(new Date(nwe-86400000)).slice(5)}</small></h2>${agenda(next)}</section>`;$('#prev').onclick=()=>{date=new Date(y,m-1,1);render()};$('#next').onclick=()=>{date=new Date(y,m+1,1);render()};$('#now').onclick=()=>{date=new Date(today.getFullYear(),today.getMonth(),1);render()};if($('#holidayButton'))$('#holidayButton').onclick=()=>showHoliday(ymd(new Date(y,m,1)));bindDetails()}
-function bindDetails(){$('#content').onclick=e=>{let t=e.target.closest('[data-detail]');if(!t)return;let k=t.dataset.kind||'event';if(k==='visit')visitOpen(t.dataset.detail);else if(k==='utility')utilityOpen(t.dataset.detail);else editOpen(t.dataset.detail)};$('#content').onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-detail]')){e.preventDefault();let k=e.target.dataset.kind||'event';if(k==='visit')visitOpen(e.target.dataset.detail);else if(k==='utility')utilityOpen(e.target.dataset.detail);else editOpen(e.target.dataset.detail)}}}
+function bindDetails(){$('#content').onclick=e=>{let t=e.target.closest('[data-detail]');if(!t)return;let k=t.dataset.kind||'event';if(k==='visit')visitOpen(t.dataset.detail);else if(k==='utility')utilityOpen(t.dataset.detail);else eventDetailOpen(t.dataset.detail)};$('#content').onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-detail]')){e.preventDefault();let k=e.target.dataset.kind||'event';if(k==='visit')visitOpen(e.target.dataset.detail);else if(k==='utility')utilityOpen(e.target.dataset.detail);else eventDetailOpen(e.target.dataset.detail)}}}
 function editOpen(id){
   let item=events.find(x=>x.id===id);if(!item)return;
   editingId=id;let f=$('#eventForm');f.reset();
@@ -771,7 +905,7 @@ function editOpen(id){
 function showHoliday(iso){$('#holidayForm').reset();$('#holidayForm').elements.holidayDate.value=iso||ymd(today);updateHolidayForm();$('#holidayModal').classList.add('open')}
 function updateHolidayForm(){let iso=$('#holidayForm').elements.holidayDate.value,y=+iso.slice(0,4),base=officialHolidays[y]?.[iso.slice(5)]||(y>2027?fixedHolidays[iso.slice(5)]:'')||'';$('#holidayForm').elements.holidayName.value=customHolidays[iso]||base;$('#holidayBaseNote').textContent=base?'기본 공휴일: '+base:'기본 공휴일 정보 없음';$('#holidayRemove').hidden=!customHolidays[iso]}
 function toggleFields(){$('#timeFields').hidden=$('#timeMode').value!=='on';$('#endFields').hidden=$('#endMode').value!=='on';$('#repeatFields').hidden=$('#repeatMode').value!=='on';$('#timeDigits').required=$('#timeMode').value==='on';$('#endDigits').required=$('#endMode').value==='on';$('#intervalCount').required=$('#repeatMode').value==='on'}
-function setupForms(){$('#adminButton').onclick=lockApp;$('#dept').innerHTML=depts.map(d=>`<option>${d}</option>`).join('');$('#add').onclick=openEventNew;$('#eventDelete').onclick=()=>{if(!editingId)return;let item=events.find(e=>e.id===editingId);if(!item)return;let msg='이 일정을 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.';if(recurrence(item))msg+='\n반복 일정 전체가 삭제됩니다.';if(!confirm(msg))return;removeEvent(editingId);editingId=null;$('#eventModal').classList.remove('open');render();queueSave();toast('일정을 삭제했습니다.')};$('#eventCancel').onclick=()=>$('#eventModal').classList.remove('open');$('#eventModal').onclick=e=>{if(e.target.id==='eventModal')$('#eventModal').classList.remove('open')};$('#timeMode').onchange=toggleFields;$('#endMode').onchange=toggleFields;$('#repeatMode').onchange=toggleFields;['timeDigits','endDigits'].forEach(id=>$('#'+id).oninput=e=>e.target.value=e.target.value.replace(/\D/g,'').slice(0,4));$('#eventForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),td=String(f.get('timeDigits')||''),ed=String(f.get('endDigits')||''),count=Number(f.get('intervalCount'));if(f.get('timeMode')==='on'&&!/^([01]\d|2[0-3])[0-5]\d$/.test(td))return alert('시간을 4자리 숫자로 입력해 주세요.');if(f.get('endMode')==='on'&&!/^([01]\d|2[0-3])[0-5]\d$/.test(ed))return alert('종료 시간을 4자리 숫자로 입력해 주세요.');if(f.get('timeMode')==='on'&&f.get('endMode')==='on'&&ed<=td)return alert('종료 시간은 시작 시간보다 늦어야 합니다.');if(f.get('repeatMode')==='on'&&(!Number.isInteger(count)||count<1||count>99))return alert('반복 간격을 확인해 주세요.');let description=String(f.get('description')||'').trim();if(!description)return alert('내용을 입력해 주세요.');let item={id:crypto.randomUUID?.()||String(Date.now()),dept:f.get('dept'),date:f.get('date'),repeat:f.get('repeatMode')==='on'?'interval':'none',intervalCount:f.get('repeatMode')==='on'?count:null,intervalUnit:f.get('repeatMode')==='on'?f.get('intervalUnit'):null,time:f.get('timeMode')==='on'?td.slice(0,2)+':'+td.slice(2):'',endTime:f.get('endMode')==='on'?ed.slice(0,2)+':'+ed.slice(2):'',name:String(f.get('name')||'').trim(),description};if(!item.name||!valid(item.date))return;if(editingId){let idx=events.findIndex(x=>x.id===editingId);if(idx<0)return;item.id=editingId;events[idx]=item;toast('일정이 수정되었습니다.')}else{events.push(item);toast('일정이 등록되었습니다.')}date=new Date(+item.date.slice(0,4),+item.date.slice(5,7)-1,1);editingId=null;$('#eventModal').classList.remove('open');render();queueSave()};$('#holidayForm').elements.holidayDate.onchange=updateHolidayForm;$('#holidayCancel').onclick=()=>$('#holidayModal').classList.remove('open');$('#holidayForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),iso=f.get('holidayDate'),name=String(f.get('holidayName')||'').trim();if(!valid(iso)||!name)return;customHolidays[iso]=name;$('#holidayModal').classList.remove('open');date=new Date(+iso.slice(0,4),+iso.slice(5,7)-1,1);render();queueSave()};$('#holidayRemove').onclick=()=>{let iso=$('#holidayForm').elements.holidayDate.value;delete customHolidays[iso];$('#holidayModal').classList.remove('open');render();queueSave()};toggleFields()}
+function setupForms(){$('#adminButton').onclick=lockApp;$('#dept').innerHTML=depts.map(d=>`<option>${d}</option>`).join('');$('#add').onclick=openEventNew;$('#eventDelete').onclick=()=>{if(!editingId)return;let item=events.find(e=>e.id===editingId);if(!item)return;let msg='이 일정을 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.';if(recurrence(item))msg+='\n반복 일정 전체가 삭제됩니다.';if(!confirm(msg))return;removeEvent(editingId);editingId=null;detailEventId=null;$('#eventModal').classList.remove('open');$('#eventDetailModal').classList.remove('open');render();queueSave();toast('일정을 삭제했습니다.')};$('#eventCancel').onclick=()=>$('#eventModal').classList.remove('open');$('#eventModal').onclick=e=>{if(e.target.id==='eventModal')$('#eventModal').classList.remove('open')};$('#timeMode').onchange=toggleFields;$('#endMode').onchange=toggleFields;$('#repeatMode').onchange=toggleFields;['timeDigits','endDigits'].forEach(id=>$('#'+id).oninput=e=>e.target.value=e.target.value.replace(/\D/g,'').slice(0,4));$('#eventForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),td=String(f.get('timeDigits')||''),ed=String(f.get('endDigits')||''),count=Number(f.get('intervalCount'));if(f.get('timeMode')==='on'&&!/^([01]\d|2[0-3])[0-5]\d$/.test(td))return alert('시간을 4자리 숫자로 입력해 주세요.');if(f.get('endMode')==='on'&&!/^([01]\d|2[0-3])[0-5]\d$/.test(ed))return alert('종료 시간을 4자리 숫자로 입력해 주세요.');if(f.get('timeMode')==='on'&&f.get('endMode')==='on'&&ed<=td)return alert('종료 시간은 시작 시간보다 늦어야 합니다.');if(f.get('repeatMode')==='on'&&(!Number.isInteger(count)||count<1||count>99))return alert('반복 간격을 확인해 주세요.');let description=String(f.get('description')||'').trim();if(!description)return alert('내용을 입력해 주세요.');let item={id:crypto.randomUUID?.()||String(Date.now()),dept:f.get('dept'),date:f.get('date'),repeat:f.get('repeatMode')==='on'?'interval':'none',intervalCount:f.get('repeatMode')==='on'?count:null,intervalUnit:f.get('repeatMode')==='on'?f.get('intervalUnit'):null,time:f.get('timeMode')==='on'?td.slice(0,2)+':'+td.slice(2):'',endTime:f.get('endMode')==='on'?ed.slice(0,2)+':'+ed.slice(2):'',name:String(f.get('name')||'').trim(),description};if(!item.name||!valid(item.date))return;let reopenDetail=null;if(editingId){let idx=events.findIndex(x=>x.id===editingId);if(idx<0)return;item.id=editingId;events[idx]=item;reopenDetail=item.id;toast('일정이 수정되었습니다.')}else{events.push(item);toast('일정이 등록되었습니다.')}date=new Date(+item.date.slice(0,4),+item.date.slice(5,7)-1,1);editingId=null;$('#eventModal').classList.remove('open');render();queueSave();if(reopenDetail)setTimeout(()=>eventDetailOpen(reopenDetail),0)};$('#holidayForm').elements.holidayDate.onchange=updateHolidayForm;$('#holidayCancel').onclick=()=>$('#holidayModal').classList.remove('open');$('#holidayForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),iso=f.get('holidayDate'),name=String(f.get('holidayName')||'').trim();if(!valid(iso)||!name)return;customHolidays[iso]=name;$('#holidayModal').classList.remove('open');date=new Date(+iso.slice(0,4),+iso.slice(5,7)-1,1);render();queueSave()};$('#holidayRemove').onclick=()=>{let iso=$('#holidayForm').elements.holidayDate.value;delete customHolidays[iso];$('#holidayModal').classList.remove('open');render();queueSave()};toggleFields()}
 function setupQr(){let made=false;$('#qrButton').onclick=()=>{$('#qrModal').classList.add('open');if(!made&&window.QRCode){new QRCode($('#qrcode'),{text:APP_URL,width:240,height:240,correctLevel:QRCode.CorrectLevel.M});made=true}};$('#qrClose').onclick=()=>$('#qrModal').classList.remove('open');$('#qrModal').onclick=e=>{if(e.target.id==='qrModal')$('#qrModal').classList.remove('open')}}
 const headers=['담당부서','날짜','시간','일정명','내용','반복주기','종료시간'];
 
@@ -785,14 +919,14 @@ function setupHome(){
 function setupExcel(){$('#download').onclick=()=>{if(!window.XLSX)return alert('엑셀 모듈을 불러오지 못했습니다.');if(view==='출입·작업관리'){
   let visitRows=visits.slice().sort((a,b)=>(a.startDate||'').localeCompare(b.startDate||'')).map(v=>({담당부서:v.dept||'부서 미지정',업체명:v.company,방문시작일:v.startDate,방문종료일:v.endDate,시작시간:v.startTime||'',종료시간:v.endTime||'',방문인원:v.headcount||1,방문대표자:v.representative||'',대표자연락처:v.phone||'',담당자:v.manager||'',출입증지급:v.badgeStatus||'미지급',출입구역:(v.zones||[]).join(', '),신청사유:v.reason||''}));
   let utilityRows=utilityWorks.slice().sort((a,b)=>(a.workDate||'').localeCompare(b.workDate||'')).map(w=>({담당부서:w.dept||'부서 미지정',작업명:w.workName,작업대상유틸리티:(w.targets||[]).join(', '),작업예정일:w.workDate,시작시간:w.startTime||'',종료시간:w.endTime||'',작업내용:w.workContent||'',작업장소:w.location||'',작업담당자:w.manager||'',작업업체:w.company||'',유틸리티차단여부:w.shutdown||'',관련부서협의:(w.departments||[]).join(', '),비고:w.note||''}));
-  let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(visitRows),'방문업체');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(utilityRows),'유틸리티작업');XLSX.writeFile(wb,'FCT_출입작업관리_rev.29.xlsx');return}let rows;
+  let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(visitRows),'방문업체');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(utilityRows),'유틸리티작업');XLSX.writeFile(wb,'FCT_출입작업관리_rev.30.xlsx');return}let rows;
 if(depts.includes(view)){
   let y=date.getFullYear(),m=date.getMonth(),start=`${y}-${pad(m+1)}-01`,end=`${y}-${pad(m+1)}-${pad(new Date(y,m+1,0).getDate())}`;
   rows=filtered(occurrences(start,end)).map(e=>({담당부서:e.dept,날짜:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:e.kind?'':(recurrenceLabel(e)||'한 번만'),종료시간:e.endTime||'',구분:e.kind==='visit'?'방문업체':e.kind==='utility'?'유틸리티 작업':'일반 일정'}));
 }else{
   rows=events.map(e=>({담당부서:e.dept,날짜:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:recurrenceLabel(e)||'한 번만',종료시간:e.endTime||'',구분:'일반 일정'}));
-}let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.29.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['날짜']||r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
-setAdminMode(false);setupForms();setupVisits();setupUtilities();setupBulkDelete();setupQr();setupExcel();setupHome();setupLock();setTimeout(()=>$('#lockPin').focus(),0);
+}let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.30.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['날짜']||r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
+setAdminMode(false);setupForms();setupEventDetail();setupVisits();setupUtilities();setupBulkDelete();setupQr();setupExcel();setupHome();setupLock();setTimeout(()=>$('#lockPin').focus(),0);
 })();
 
 </script>
