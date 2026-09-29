@@ -26,6 +26,27 @@
 .lock-card input{width:100%;padding:14px;border:1px solid #cbd7e4;border-radius:10px;text-align:center;font-size:22px;letter-spacing:8px}
 .lock-card button{width:100%;margin-top:12px}.lock-msg{min-height:20px;margin-top:12px!important;font-size:13px;color:#c34d5d!important}
 body.locked .app{display:none!important}
+
+.visit-dialog{width:min(820px,100%)}
+.visit-form-grid{display:grid;grid-template-columns:125px minmax(0,1fr) 125px minmax(0,1fr);border:1px solid #bfc9d5;border-right:0;border-bottom:0;margin-top:16px}
+.visit-key,.visit-cell{border-right:1px solid #bfc9d5;border-bottom:1px solid #bfc9d5;min-height:56px}
+.visit-key{display:flex;align-items:center;padding:10px;background:#eef1f4;font-size:13px;font-weight:800}
+.visit-cell{position:relative;padding:8px;background:white}
+.visit-cell input,.visit-cell select,.visit-cell textarea{width:100%;border:1px solid #ccd6e1;border-radius:6px;padding:9px;color:#172338;background:white}
+.visit-cell textarea{min-height:72px;resize:vertical}
+.visit-wide{grid-column:2/5}
+.visit-period{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.visit-period input[type=date]{flex:1;min-width:145px}.visit-period input[type=time]{width:115px}
+.visit-zones{display:flex;gap:13px;align-items:center;flex-wrap:wrap;padding:5px 2px}.visit-zones label{display:inline-flex;align-items:center;gap:5px;font-size:13px}.visit-zones input{width:auto}
+.vendor-suggestions{position:absolute;left:8px;right:8px;top:48px;z-index:30;background:white;border:1px solid #cbd7e4;border-radius:8px;box-shadow:0 8px 24px #10274722;max-height:210px;overflow:auto}
+.vendor-suggestions button{display:block;width:100%;text-align:left;border:0;background:white;padding:10px 12px}.vendor-suggestions button:hover{background:#eef5fc}
+.vendor-note{font-size:12px;color:#1766b1;margin-top:5px}
+.vendor-master-option{display:flex;align-items:center;gap:8px;padding:12px 2px 2px;font-size:13px}.vendor-master-option input{width:auto}
+.recent-visits{margin-top:18px;border-top:1px solid #e3e9f0;padding-top:14px}.recent-visits h3{margin:0 0 8px;font-size:15px}
+.recent-visit{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 0;border-top:1px solid #eef2f6}.recent-visit:first-of-type{border-top:0}.recent-visit small{display:block;color:#68778b;margin-top:3px}.recent-visit button{flex-shrink:0}
+.visit-list-row{display:grid;grid-template-columns:105px 1fr 130px;gap:12px;padding:13px 2px;border-top:1px solid #e7edf3;align-items:start}.visit-list-row strong{cursor:pointer}.visit-meta{font-size:13px;color:#617187;margin-top:5px}
+.visit-event{--c:#2470bd}
+@media(max-width:700px){.visit-form-grid{grid-template-columns:100px minmax(0,1fr)}.visit-wide{grid-column:2}.visit-dialog{padding:16px}.visit-period{display:grid;grid-template-columns:1fr 1fr}.visit-period input[type=date],.visit-period input[type=time]{width:100%;min-width:0}.visit-list-row{grid-template-columns:72px 1fr}.visit-list-row>div:last-child{grid-column:2}.recent-visit{align-items:flex-start;flex-direction:column}}
+
 </style>
 </head>
 <body class="locked">
@@ -83,6 +104,57 @@ body.locked .app{display:none!important}
   </form>
 </div>
 
+
+<div class="modal" id="visitModal">
+  <form class="dialog visit-dialog" id="visitForm">
+    <h2 id="visitModalTitle">방문업체 등록</h2>
+    <p>기존 방문업체는 업체명을 입력하면 이전 기본정보와 방문이력을 불러옵니다.</p>
+    <div class="visit-form-grid">
+      <div class="visit-key"><span class="req-badge">필수</span>&nbsp;방문기간</div>
+      <div class="visit-cell visit-wide"><div class="visit-period">
+        <input name="startDate" type="date" required aria-label="방문 시작일">
+        <span>~</span><input name="endDate" type="date" required aria-label="방문 종료일">
+        <input name="startTime" type="time" aria-label="방문 시작시간"><span>~</span><input name="endTime" type="time" aria-label="방문 종료시간">
+      </div></div>
+
+      <div class="visit-key"><span class="req-badge">필수</span>&nbsp;업체명</div>
+      <div class="visit-cell">
+        <input name="company" id="visitCompany" autocomplete="off" maxlength="80" required placeholder="업체명 입력">
+        <div class="vendor-suggestions" id="vendorSuggestions" hidden></div>
+        <div class="vendor-note" id="vendorMatchNote"></div>
+      </div>
+      <div class="visit-key"><span class="req-badge">필수</span>&nbsp;방문인원</div>
+      <div class="visit-cell"><input name="headcount" type="number" min="1" max="999" required value="1"></div>
+
+      <div class="visit-key"><span class="req-badge">필수</span>&nbsp;방문대표자</div>
+      <div class="visit-cell"><input name="representative" maxlength="40" required></div>
+      <div class="visit-key"><span class="req-badge">필수</span>&nbsp;대표자 연락처</div>
+      <div class="visit-cell"><input name="phone" inputmode="tel" maxlength="30" required placeholder="010-0000-0000"></div>
+
+      <div class="visit-key"><span class="req-badge">필수</span>&nbsp;담당자</div>
+      <div class="visit-cell"><input name="manager" maxlength="40" required></div>
+      <div class="visit-key">출입증 지급</div>
+      <div class="visit-cell"><select name="badgeStatus"><option value="미지급">미지급</option><option value="지급">지급</option></select></div>
+
+      <div class="visit-key"><span class="req-badge">필수</span>&nbsp;출입구역</div>
+      <div class="visit-cell visit-wide"><div class="visit-zones" id="visitZones">
+        <label><input type="checkbox" name="zones" value="소성·가공동">소성·가공동</label>
+        <label><input type="checkbox" name="zones" value="1층 FAB">1층 FAB</label>
+        <label><input type="checkbox" name="zones" value="2층 FAB">2층 FAB</label>
+        <label><input type="checkbox" name="zones" value="3층 사무실">3층 사무실</label>
+        <label><input type="checkbox" name="zones" value="4층 기계실">4층 기계실</label>
+        <label><input type="checkbox" name="zones" value="기타 공용공간">기타 공용공간</label>
+      </div></div>
+
+      <div class="visit-key"><span class="req-badge">필수</span>&nbsp;신청사유</div>
+      <div class="visit-cell visit-wide"><textarea name="reason" maxlength="500" required placeholder="예: 도금 자동 분석기 DI 호스 보수"></textarea></div>
+    </div>
+    <label class="vendor-master-option"><input type="checkbox" id="updateVendorMaster" name="updateMaster"> 수정한 대표자·연락처를 업체 기본정보에도 반영</label>
+    <div class="recent-visits" id="recentVisitsWrap" hidden><h3>최근 방문이력</h3><div id="recentVisits"></div></div>
+    <div class="actions"><button class="secondary" type="button" id="visitCancel">취소</button><button class="primary" id="visitSubmit">등록</button></div>
+  </form>
+</div>
+
 <div class="modal" id="holidayModal">
   <form class="dialog" id="holidayForm"><h2>공휴일 추가·수정</h2><p>누락된 공휴일이나 임시공휴일을 날짜별로 등록할 수 있습니다.</p><label class="field">날짜<input name="holidayDate" type="date" required></label><label class="field">공휴일 이름<input name="holidayName" maxlength="40" required placeholder="예: 임시공휴일"></label><p class="hint" id="holidayBaseNote"></p><div class="actions"><button class="secondary" type="button" id="holidayRemove">직접 등록 삭제</button><button class="secondary" type="button" id="holidayCancel">취소</button><button class="primary">저장</button></div></form>
 </div>
@@ -108,7 +180,7 @@ const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const valid=iso=>/^\d{4}-\d{2}-\d{2}$/.test(iso)&&!Number.isNaN(Date.parse(iso+'T12:00:00'));
 let date=new Date(today.getFullYear(),today.getMonth(),1),view='전체 일정';
-let events=[],history={},customHolidays={},editingId=null,saveTimer=null,cloudReady=false,adminUnlocked=false,adminPin='';
+let events=[],history={},customHolidays={},vendors=[],visits=[],editingId=null,editingVisitId=null,selectedVendorId=null,saveTimer=null,cloudReady=false,adminUnlocked=false,adminPin='';
 const officialHolidays={2026:{'01-01':'신정','02-16':'설날 연휴','02-17':'설날','02-18':'설날 연휴','03-01':'삼일절','03-02':'대체공휴일','05-01':'노동절','05-05':'어린이날','05-24':'부처님오신날','05-25':'대체공휴일','06-03':'지방선거일','06-06':'현충일','07-17':'제헌절','08-15':'광복절','08-17':'대체공휴일','09-24':'추석 연휴','09-25':'추석','09-26':'추석 연휴','10-03':'개천절','10-05':'대체공휴일','10-09':'한글날','12-25':'성탄절'},2027:{'01-01':'신정','02-06':'설날 연휴','02-07':'설날','02-08':'설날 연휴','02-09':'대체공휴일','03-01':'삼일절','05-01':'노동절','05-03':'대체공휴일','05-05':'어린이날','05-13':'부처님오신날','06-06':'현충일','07-17':'제헌절','07-19':'대체공휴일','08-15':'광복절','08-16':'대체공휴일','09-14':'추석 연휴','09-15':'추석','09-16':'추석 연휴','10-03':'개천절','10-04':'대체공휴일','10-09':'한글날','10-11':'대체공휴일','12-25':'성탄절','12-27':'대체공휴일'}};
 const fixedHolidays={'01-01':'신정','03-01':'삼일절','05-01':'노동절','05-05':'어린이날','06-06':'현충일','07-17':'제헌절','08-15':'광복절','10-03':'개천절','10-09':'한글날','12-25':'성탄절'};
 function holidayName(iso){let y=Number(iso.slice(0,4));return customHolidays[iso]||officialHolidays[y]?.[iso.slice(5)]||(y>2027?fixedHolidays[iso.slice(5)]:'')||''}
@@ -128,6 +200,8 @@ async function loadCloud(pin){
   events=Array.isArray(s.events)?s.events:[];
   history=s.history&&typeof s.history==='object'?s.history:{};
   customHolidays=s.custom_holidays&&typeof s.custom_holidays==='object'?s.custom_holidays:{};
+  vendors=Array.isArray(s.vendors)?s.vendors:[];
+  visits=Array.isArray(s.visits)?s.visits:[];
   cloudReady=true;adminPin=pin;setAdminMode(true);
   document.body.classList.remove('locked');$('#lockScreen').hidden=true;
   setCloud('클라우드 연결됨','ok');render();
@@ -145,12 +219,12 @@ function setupLock(){
   };
 }
 function lockApp(){
-  adminPin='';adminUnlocked=false;cloudReady=false;events=[];history={};customHolidays={};
+  adminPin='';adminUnlocked=false;cloudReady=false;events=[];history={};customHolidays={};vendors=[];visits=[];editingVisitId=null;selectedVendorId=null;
   document.body.classList.add('locked');$('#lockScreen').hidden=false;$('#lockPin').value='';$('#lockMsg').textContent='';
   $('#content').innerHTML='';setTimeout(()=>$('#lockPin').focus(),0);
 }
 function queueSave(){if(!cloudReady)return;clearTimeout(saveTimer);saveTimer=setTimeout(saveCloud,300)}
-async function saveCloud(){if(!adminUnlocked||!adminPin)return;setCloud('클라우드 저장 중','saving');try{await adminRequest('save',{events,history,custom_holidays:customHolidays});setCloud('클라우드 저장됨','ok')}catch(err){console.error(err);setCloud('저장 실패','error');if(/PIN|unauthorized|인증/i.test(err.message)){adminPin='';setAdminMode(false)}toast('클라우드 저장에 실패했습니다.')}}
+async function saveCloud(){if(!adminUnlocked||!adminPin)return;setCloud('클라우드 저장 중','saving');try{await adminRequest('save',{events,history,custom_holidays:customHolidays,vendors,visits});setCloud('클라우드 저장됨','ok')}catch(err){console.error(err);setCloud('저장 실패','error');if(/PIN|unauthorized|인증/i.test(err.message)){adminPin='';setAdminMode(false)}toast('클라우드 저장에 실패했습니다.')}}
 function toast(msg){let t=$('#toast');t.textContent=msg;t.style.display='block';clearTimeout(t._timer);t._timer=setTimeout(()=>t.style.display='none',2400)}
 function nav(){let views=['전체 일정','연간일정',...depts];$('#nav').innerHTML=views.map(v=>`<button class="nav ${view===v?'active':''}" data-view="${v}" type="button">${v}</button>`).join('');$('#nav').querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{view=b.dataset.view;render()})}
 function filtered(list){return depts.includes(view)?list.filter(e=>e.dept===view):list}
@@ -176,7 +250,7 @@ function toggleFields(){$('#timeFields').hidden=$('#timeMode').value!=='on';$('#
 function setupForms(){$('#adminButton').onclick=lockApp;$('#dept').innerHTML=depts.map(d=>`<option>${d}</option>`).join('');$('#add').onclick=()=>{editingId=null;$('#eventForm').reset();$('#eventModalTitle').textContent='일정 등록';$('#eventModalHelp').textContent='날짜와 반복 주기를 입력하세요.';$('#eventSubmit').textContent='등록';toggleFields();$('#eventForm').elements.date.value=ymd(today);if(depts.includes(view))$('#dept').value=view;$('#eventModal').classList.add('open')};$('#eventCancel').onclick=()=>$('#eventModal').classList.remove('open');$('#eventModal').onclick=e=>{if(e.target.id==='eventModal')$('#eventModal').classList.remove('open')};$('#timeMode').onchange=toggleFields;$('#endMode').onchange=toggleFields;$('#repeatMode').onchange=toggleFields;['timeDigits','endDigits'].forEach(id=>$('#'+id).oninput=e=>e.target.value=e.target.value.replace(/\D/g,'').slice(0,4));$('#eventForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),td=String(f.get('timeDigits')||''),ed=String(f.get('endDigits')||''),count=Number(f.get('intervalCount'));if(f.get('timeMode')==='on'&&!/^([01]\d|2[0-3])[0-5]\d$/.test(td))return alert('시간을 4자리 숫자로 입력해 주세요.');if(f.get('endMode')==='on'&&!/^([01]\d|2[0-3])[0-5]\d$/.test(ed))return alert('종료 시간을 4자리 숫자로 입력해 주세요.');if(f.get('timeMode')==='on'&&f.get('endMode')==='on'&&ed<=td)return alert('종료 시간은 시작 시간보다 늦어야 합니다.');if(f.get('repeatMode')==='on'&&(!Number.isInteger(count)||count<1||count>99))return alert('반복 간격을 확인해 주세요.');let description=String(f.get('description')||'').trim();if(!description)return alert('내용을 입력해 주세요.');let item={id:crypto.randomUUID?.()||String(Date.now()),dept:f.get('dept'),date:f.get('date'),repeat:f.get('repeatMode')==='on'?'interval':'none',intervalCount:f.get('repeatMode')==='on'?count:null,intervalUnit:f.get('repeatMode')==='on'?f.get('intervalUnit'):null,time:f.get('timeMode')==='on'?td.slice(0,2)+':'+td.slice(2):'',endTime:f.get('endMode')==='on'?ed.slice(0,2)+':'+ed.slice(2):'',name:String(f.get('name')||'').trim(),description};if(!item.name||!valid(item.date))return;if(editingId){let idx=events.findIndex(x=>x.id===editingId);if(idx<0)return;item.id=editingId;events[idx]=item;toast('일정이 수정되었습니다.')}else{events.push(item);toast('일정이 등록되었습니다.')}date=new Date(+item.date.slice(0,4),+item.date.slice(5,7)-1,1);editingId=null;$('#eventModal').classList.remove('open');render();queueSave()};$('#holidayForm').elements.holidayDate.onchange=updateHolidayForm;$('#holidayCancel').onclick=()=>$('#holidayModal').classList.remove('open');$('#holidayForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),iso=f.get('holidayDate'),name=String(f.get('holidayName')||'').trim();if(!valid(iso)||!name)return;customHolidays[iso]=name;$('#holidayModal').classList.remove('open');date=new Date(+iso.slice(0,4),+iso.slice(5,7)-1,1);render();queueSave()};$('#holidayRemove').onclick=()=>{let iso=$('#holidayForm').elements.holidayDate.value;delete customHolidays[iso];$('#holidayModal').classList.remove('open');render();queueSave()};toggleFields()}
 function setupQr(){let made=false;$('#qrButton').onclick=()=>{$('#qrModal').classList.add('open');if(!made&&window.QRCode){new QRCode($('#qrcode'),{text:APP_URL,width:240,height:240,correctLevel:QRCode.CorrectLevel.M});made=true}};$('#qrClose').onclick=()=>$('#qrModal').classList.remove('open');$('#qrModal').onclick=e=>{if(e.target.id==='qrModal')$('#qrModal').classList.remove('open')}}
 const headers=['담당부서','날짜','시간','일정명','내용','반복주기','종료시간'];
-function setupExcel(){$('#download').onclick=()=>{if(!window.XLSX)return alert('엑셀 모듈을 불러오지 못했습니다.');let rows=events.filter(e=>!depts.includes(view)||e.dept===view).map(e=>({담당부서:e.dept,날짜:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:recurrenceLabel(e)||'한 번만',종료시간:e.endTime||''}));let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.23.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['날짜']||r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
+function setupExcel(){$('#download').onclick=()=>{if(!window.XLSX)return alert('엑셀 모듈을 불러오지 못했습니다.');let rows=events.filter(e=>!depts.includes(view)||e.dept===view).map(e=>({담당부서:e.dept,날짜:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:recurrenceLabel(e)||'한 번만',종료시간:e.endTime||''}));let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.24.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['날짜']||r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
 setAdminMode(false);setupForms();setupQr();setupExcel();setupLock();setTimeout(()=>$('#lockPin').focus(),0);
 })();
 
