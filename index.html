@@ -428,24 +428,97 @@ function bindVisitClicks(){
   $('#content').onclick=e=>{let t=e.target.closest('[data-visit]');if(t)visitOpen(t.dataset.visit)};
   $('#content').onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-visit]')){e.preventDefault();visitOpen(e.target.dataset.visit)}};
 }
-function renderVisitView(){
+
+function utilityOpen(id=null){
+  editingUtilityId=id;
+  let f=$('#utilityForm');f.reset();
+  document.querySelectorAll('#utilityTargets input[name="targets"],#utilityDepartments input[name="departments"]').forEach(cb=>cb.checked=false);
+  document.querySelectorAll('#utilityForm input[name="shutdown"]').forEach(r=>r.checked=false);
+  if(id){
+    let w=utilityWorks.find(x=>x.id===id);if(!w)return;
+    $('#utilityModalTitle').textContent='유틸리티 작업 신청서 수정';$('#utilitySubmit').textContent='수정 저장';
+    f.elements.workName.value=w.workName||'';f.elements.workDate.value=w.workDate||'';
+    f.elements.startTime.value=w.startTime||'';f.elements.endTime.value=w.endTime||'';
+    f.elements.workContent.value=w.workContent||'';f.elements.location.value=w.location||'';
+    f.elements.manager.value=w.manager||'';f.elements.company.value=w.company||'';
+    f.elements.note.value=w.note||'';
+    document.querySelectorAll('#utilityTargets input[name="targets"]').forEach(cb=>cb.checked=(w.targets||[]).includes(cb.value));
+    document.querySelectorAll('#utilityDepartments input[name="departments"]').forEach(cb=>cb.checked=(w.departments||[]).includes(cb.value));
+    let shutdown=document.querySelector('#utilityForm input[name="shutdown"][value="'+CSS.escape(w.shutdown||'')+'"]');if(shutdown)shutdown.checked=true;
+  }else{
+    $('#utilityModalTitle').textContent='유틸리티 작업 신청서';$('#utilitySubmit').textContent='등록';
+    f.elements.workDate.value=ymd(today);
+  }
+  $('#utilityModal').classList.add('open');
+}
+function setupUtilities(){
+  $('#utilityCancel').onclick=()=>$('#utilityModal').classList.remove('open');
+  $('#utilityModal').onclick=e=>{if(e.target.id==='utilityModal')$('#utilityModal').classList.remove('open')};
+  $('#utilityForm').onsubmit=e=>{
+    e.preventDefault();let f=new FormData(e.target);
+    let workName=String(f.get('workName')||'').trim(),workDate=String(f.get('workDate')||'');
+    let startTime=String(f.get('startTime')||''),endTime=String(f.get('endTime')||'');
+    let workContent=String(f.get('workContent')||'').trim(),location=String(f.get('location')||'').trim();
+    let manager=String(f.get('manager')||'').trim(),company=String(f.get('company')||'').trim();
+    let shutdown=String(f.get('shutdown')||''),note=String(f.get('note')||'').trim();
+    let targets=f.getAll('targets').map(String),departments=f.getAll('departments').map(String);
+    if(!workName||!valid(workDate)||!workContent||!location||!manager||!shutdown)return alert('필수 입력값을 확인해 주세요.');
+    if(!targets.length)return alert('작업 대상 유틸리티를 1개 이상 선택해 주세요.');
+    if(startTime&&endTime&&endTime<=startTime)return alert('종료시간은 시작시간보다 늦어야 합니다.');
+    let old=editingUtilityId?utilityWorks.find(x=>x.id===editingUtilityId):null;
+    let item={id:editingUtilityId||newId(),workName,targets,workDate,startTime,endTime,workContent,location,manager,company,shutdown,departments,note,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+    if(editingUtilityId){let idx=utilityWorks.findIndex(x=>x.id===editingUtilityId);if(idx<0)return;utilityWorks[idx]=item;toast('유틸리티 작업이 수정되었습니다.')}
+    else{utilityWorks.push(item);toast('유틸리티 작업이 등록되었습니다.')}
+    date=new Date(+workDate.slice(0,4),+workDate.slice(5,7)-1,1);editingUtilityId=null;$('#utilityModal').classList.remove('open');render();queueSave();
+  };
+}
+function utilityTimeLabel(w){return w.startTime&&w.endTime?`${w.startTime}~${w.endTime}`:w.startTime||w.endTime||'시간 미지정'}
+function bindManagementClicks(){
+  $('#content').onclick=e=>{
+    let v=e.target.closest('[data-visit]');if(v){visitOpen(v.dataset.visit);return}
+    let u=e.target.closest('[data-utility]');if(u)utilityOpen(u.dataset.utility);
+  };
+  $('#content').onkeydown=e=>{
+    if(e.key!=='Enter'&&e.key!==' ')return;
+    let v=e.target.closest('[data-visit]');if(v){e.preventDefault();visitOpen(v.dataset.visit);return}
+    let u=e.target.closest('[data-utility]');if(u){e.preventDefault();utilityOpen(u.dataset.utility)}
+  };
+}
+function renderManagementView(){
   let y=date.getFullYear(),m=date.getMonth(),monthStart=`${y}-${pad(m+1)}-01`,monthEnd=`${y}-${pad(m+1)}-${pad(new Date(y,m+1,0).getDate())}`;
-  $('#title').textContent='방문업체';
+  $('#title').textContent='출입·작업관리';
   let monthVisits=visits.filter(v=>(v.startDate||'')<=monthEnd&&(v.endDate||v.startDate||'')>=monthStart)
     .sort((a,b)=>(a.startDate||'').localeCompare(b.startDate||'')||(a.startTime||'').localeCompare(b.startTime||''));
-  $('#subtitle').textContent=`${y}년 ${m+1}월 · 등록업체 ${vendors.length}개 · 방문 ${monthVisits.length}건`;
-  let list=visitOccurrences(monthStart,monthEnd),first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),count=Math.ceil((first+days)/7)*7;
+  let monthUtilities=utilityWorks.filter(w=>(w.workDate||'')>=monthStart&&(w.workDate||'')<=monthEnd)
+    .sort((a,b)=>(a.workDate||'').localeCompare(b.workDate||'')||(a.startTime||'').localeCompare(b.startTime||''));
+  $('#subtitle').textContent=`${y}년 ${m+1}월 · 방문 ${monthVisits.length}건 · 유틸리티 작업 ${monthUtilities.length}건`;
+
+  let items=[
+    ...visitOccurrences(monthStart,monthEnd).map(v=>({...v,kind:'visit'})),
+    ...monthUtilities.map(w=>({...w,date:w.workDate,kind:'utility'}))
+  ].sort((a,b)=>a.date.localeCompare(b.date)||((a.startTime||'').localeCompare(b.startTime||'')));
+
+  let first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),count=Math.ceil((first+days)/7)*7;
   let cells=Array.from({length:count},(_,i)=>{
-    let d=new Date(y,m,i-first+1),iso=ymd(d),mine=list.filter(v=>v.date===iso),holiday=holidayName(iso);
-    return `<div class="day ${d.getMonth()!==m?'out':''} ${d.getDay()===0?'sunday':d.getDay()===6?'saturday':''} ${holiday?'holiday':''} ${iso===ymd(today)?'today':''}"><span class="num">${d.getDate()}</span>${holiday?`<span class="holiday-name" title="${esc(holiday)}">${esc(holiday)}</span>`:''}${mine.length?`<span class="mobile-count">${mine.length}건</span>`:''}${mine.map(v=>`<div class="event visit-event" data-visit="${esc(v.id)}" tabindex="0" title="${esc(v.reason||v.company)}">${esc(v.company)} · ${esc(v.representative||'')}</div>`).join('')}</div>`;
+    let d=new Date(y,m,i-first+1),iso=ymd(d),mine=items.filter(x=>x.date===iso),holiday=holidayName(iso);
+    let rendered=mine.map(x=>x.kind==='visit'
+      ?`<div class="event visit-event" data-visit="${esc(x.id)}" tabindex="0" title="${esc(x.reason||x.company)}">방문 · ${esc(x.company)}${x.startTime?' · '+esc(x.startTime):''}</div>`
+      :`<div class="event utility-event" data-utility="${esc(x.id)}" tabindex="0" title="${esc(x.workContent||x.workName)}">유틸리티 · ${esc(x.workName)}${x.startTime?' · '+esc(x.startTime):''}</div>`
+    ).join('');
+    return `<div class="day ${d.getMonth()!==m?'out':''} ${d.getDay()===0?'sunday':d.getDay()===6?'saturday':''} ${holiday?'holiday':''} ${iso===ymd(today)?'today':''}"><span class="num">${d.getDate()}</span>${holiday?`<span class="holiday-name" title="${esc(holiday)}">${esc(holiday)}</span>`:''}${mine.length?`<span class="mobile-count">${mine.length}건</span>`:''}${rendered}</div>`;
   }).join('');
-  let rows=monthVisits.length?monthVisits.map(v=>`<div class="visit-list-row" data-visit="${esc(v.id)}" tabindex="0"><div class="date">${esc((v.startDate||'').slice(5))}${v.endDate&&v.endDate!==v.startDate?`<br>~ ${esc(v.endDate.slice(5))}`:''}</div><div><strong>${esc(v.company)}</strong><div class="visit-meta">${esc(v.representative||'')} · ${esc(String(v.headcount||1))}명 · ${esc((v.zones||[]).join(', '))}</div><p>${esc(v.reason||'')}</p></div><div class="visit-meta">${esc(visitTimeLabel(v))}<br>담당 ${esc(v.manager||'-')}<br>출입증 ${esc(v.badgeStatus||'미지급')}</div></div>`).join(''):'<div class="empty">등록된 방문업체 일정이 없습니다.</div>';
-  $('#content').innerHTML=`<section class="card calendar"><div class="calhead"><h2>${y}년 ${m+1}월 방문일정</h2><div class="controls"><button id="prev" type="button">‹</button><button id="now" type="button">이번 달</button><button id="next" type="button">›</button></div></div><div class="grid">${['일','월','화','수','목','금','토'].map(d=>`<div class="weekday">${d}</div>`).join('')}${cells}</div></section><section class="card below"><h2>${m+1}월 방문업체</h2>${rows}</section>`;
+
+  let visitRows=monthVisits.length?monthVisits.map(v=>`<div class="visit-list-row" data-visit="${esc(v.id)}" tabindex="0"><div class="date">${esc((v.startDate||'').slice(5))}${v.endDate&&v.endDate!==v.startDate?`<br>~ ${esc(v.endDate.slice(5))}`:''}</div><div><strong>${esc(v.company)}</strong><div class="visit-meta">${esc(v.representative||'')} · ${esc(String(v.headcount||1))}명 · ${esc((v.zones||[]).join(', '))}</div><p>${esc(v.reason||'')}</p></div><div class="visit-meta">${esc(visitTimeLabel(v))}<br>담당 ${esc(v.manager||'-')}<br>출입증 ${esc(v.badgeStatus||'미지급')}</div></div>`).join(''):'<div class="empty">등록된 방문 일정이 없습니다.</div>';
+
+  let utilityRows=monthUtilities.length?monthUtilities.map(w=>`<div class="visit-list-row" data-utility="${esc(w.id)}" tabindex="0"><div class="date">${esc((w.workDate||'').slice(5))}</div><div><strong>${esc(w.workName)}</strong><div class="visit-meta">${esc((w.targets||[]).join(', '))} · ${esc(w.location||'')}</div><p>${esc(w.workContent||'')}</p></div><div class="visit-meta">${esc(utilityTimeLabel(w))}<br>담당 ${esc(w.manager||'-')}<br>${esc(w.shutdown||'')}</div></div>`).join(''):'<div class="empty">등록된 유틸리티 작업이 없습니다.</div>';
+
+  $('#content').innerHTML=`<div class="management-legend"><span><i class="legend-dot" style="background:#2470bd"></i>방문업체</span><span><i class="legend-dot" style="background:#7a5cbd"></i>유틸리티 작업</span></div><section class="card calendar"><div class="calhead"><h2>${y}년 ${m+1}월 출입·작업 일정</h2><div class="controls"><button id="prev" type="button">‹</button><button id="now" type="button">이번 달</button><button id="next" type="button">›</button></div></div><div class="grid">${['일','월','화','수','목','금','토'].map(d=>`<div class="weekday">${d}</div>`).join('')}${cells}</div></section><section class="card below"><h2>${m+1}월 방문업체</h2>${visitRows}</section><section class="card below"><h2>${m+1}월 유틸리티 작업</h2>${utilityRows}</section>`;
   $('#prev').onclick=()=>{date=new Date(y,m-1,1);render()};
   $('#next').onclick=()=>{date=new Date(y,m+1,1);render()};
   $('#now').onclick=()=>{date=new Date(today.getFullYear(),today.getMonth(),1);render()};
-  bindVisitClicks();
+  bindManagementClicks();
 }
+
 function setupVisits(){
   $('#visitCancel').onclick=()=>$('#visitModal').classList.remove('open');
   $('#visitModal').onclick=e=>{if(e.target.id==='visitModal')$('#visitModal').classList.remove('open')};
@@ -505,7 +578,7 @@ function setupForms(){$('#adminButton').onclick=lockApp;$('#dept').innerHTML=dep
 function setupQr(){let made=false;$('#qrButton').onclick=()=>{$('#qrModal').classList.add('open');if(!made&&window.QRCode){new QRCode($('#qrcode'),{text:APP_URL,width:240,height:240,correctLevel:QRCode.CorrectLevel.M});made=true}};$('#qrClose').onclick=()=>$('#qrModal').classList.remove('open');$('#qrModal').onclick=e=>{if(e.target.id==='qrModal')$('#qrModal').classList.remove('open')}}
 const headers=['담당부서','날짜','시간','일정명','내용','반복주기','종료시간'];
 function setupExcel(){$('#download').onclick=()=>{if(!window.XLSX)return alert('엑셀 모듈을 불러오지 못했습니다.');if(view==='방문업체'){let rows=visits.slice().sort((a,b)=>(a.startDate||'').localeCompare(b.startDate||'')).map(v=>({업체명:v.company,방문시작일:v.startDate,방문종료일:v.endDate,시작시간:v.startTime||'',종료시간:v.endTime||'',방문인원:v.headcount||1,방문대표자:v.representative||'',대표자연락처:v.phone||'',담당자:v.manager||'',출입증지급:v.badgeStatus||'미지급',출입구역:(v.zones||[]).join(', '),신청사유:v.reason||''}));let ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'방문업체');XLSX.writeFile(wb,'FCT_방문업체_rev.25.xlsx');return}let rows=events.filter(e=>!depts.includes(view)||e.dept===view).map(e=>({담당부서:e.dept,날짜:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:recurrenceLabel(e)||'한 번만',종료시간:e.endTime||''}));let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.25.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['날짜']||r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
-setAdminMode(false);setupForms();setupVisits();setupQr();setupExcel();setupLock();setTimeout(()=>$('#lockPin').focus(),0);
+setAdminMode(false);setupForms();setupVisits();setupUtilities();setupQr();setupExcel();setupLock();setTimeout(()=>$('#lockPin').focus(),0);
 })();
 
 </script>
