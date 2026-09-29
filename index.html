@@ -342,8 +342,82 @@ function toast(msg){let t=$('#toast');t.textContent=msg;t.style.display='block';
 function nav(){let views=['전체 일정','연간일정','출입·작업관리',...depts];$('#nav').innerHTML=views.map(v=>`<button class="nav ${view===v?'active':''}" data-view="${v}" type="button">${v}</button>`).join('');$('#nav').querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{view=b.dataset.view;render()})}
 function filtered(list){return depts.includes(view)?list.filter(e=>e.dept===view):list}
 
+
+function removeEvent(id){
+  events=events.filter(e=>e.id!==id);
+  if(history&&Object.prototype.hasOwnProperty.call(history,id))delete history[id];
+}
+function removeVisit(id){visits=visits.filter(v=>v.id!==id)}
+function removeUtility(id){utilityWorks=utilityWorks.filter(w=>w.id!==id)}
+function uniqueDeleteCandidates(items){
+  let seen=new Set(),out=[];
+  for(const x of items){
+    let kind=x.kind||'event',key=kind+':'+x.id;
+    if(seen.has(key))continue;seen.add(key);
+    if(kind==='visit'){
+      let v=visits.find(a=>a.id===x.id);if(v)out.push({kind,id:v.id,type:'방문',date:v.startDate,label:v.company||'방문업체',meta:[v.representative,(v.zones||[]).join(', '),v.reason].filter(Boolean).join(' · ')});
+    }else if(kind==='utility'){
+      let w=utilityWorks.find(a=>a.id===x.id);if(w)out.push({kind,id:w.id,type:'유틸리티',date:w.workDate,label:w.workName||'유틸리티 작업',meta:[(w.targets||[]).join(', '),w.location,w.manager].filter(Boolean).join(' · ')});
+    }else{
+      let e=events.find(a=>a.id===x.id);if(e)out.push({kind:'event',id:e.id,type:'일정',date:e.date,label:e.name||'일정',meta:[e.dept,recurrenceLabel(e),e.description].filter(Boolean).join(' · ')});
+    }
+  }
+  return out.sort((a,b)=>(a.date||'').localeCompare(b.date||'')||a.type.localeCompare(b.type)||a.label.localeCompare(b.label));
+}
+function currentDeleteCandidates(){
+  let y=date.getFullYear(),m=date.getMonth();
+  if(view==='연간일정'){
+    return uniqueDeleteCandidates(occurrences(`${y}-01-01`,`${y}-12-31`));
+  }
+  let start=`${y}-${pad(m+1)}-01`,end=`${y}-${pad(m+1)}-${pad(new Date(y,m+1,0).getDate())}`;
+  if(view==='출입·작업관리'){
+    return uniqueDeleteCandidates([
+      ...visitOccurrences(start,end).map(v=>({...v,kind:'visit'})),
+      ...utilityWorks.filter(w=>valid(w.workDate)&&w.workDate>=start&&w.workDate<=end).map(w=>({...w,id:w.id,kind:'utility'}))
+    ]);
+  }
+  let base=occurrences(start,end);
+  if(depts.includes(view))base=base.filter(e=>e.kind||e.dept===view).filter(e=>!e.kind);
+  return uniqueDeleteCandidates(base);
+}
+function openBulkDelete(){
+  let items=currentDeleteCandidates(),box=$('#bulkDeleteList');
+  $('#bulkSelectAll').checked=false;
+  if(!items.length){
+    box.innerHTML='<div class="empty" style="padding:18px">현재 화면에서 삭제할 항목이 없습니다.</div>';
+    $('#bulkDeleteConfirm').disabled=true;
+  }else{
+    $('#bulkDeleteConfirm').disabled=false;
+    box.innerHTML=items.map(x=>`<label class="bulk-item"><input type="checkbox" class="bulk-check" data-kind="${esc(x.kind)}" data-id="${esc(x.id)}"><span class="bulk-kind">${esc(x.type)}</span><span><strong>${esc(x.date||'')} · ${esc(x.label)}</strong><small>${esc(x.meta||'')}</small></span></label>`).join('');
+  }
+  $('#bulkDeleteHelp').textContent=view==='연간일정'
+    ?`${date.getFullYear()}년 ${view}에서 삭제할 항목을 선택하세요.`
+    :`${date.getFullYear()}년 ${date.getMonth()+1}월 · ${view}에서 삭제할 항목을 선택하세요.`;
+  $('#bulkDeleteModal').classList.add('open');
+}
+function setupBulkDelete(){
+  $('#bulkDeleteButton').onclick=openBulkDelete;
+  $('#bulkDeleteCancel').onclick=()=>$('#bulkDeleteModal').classList.remove('open');
+  $('#bulkDeleteModal').onclick=e=>{if(e.target.id==='bulkDeleteModal')$('#bulkDeleteModal').classList.remove('open')};
+  $('#bulkSelectAll').onchange=e=>document.querySelectorAll('#bulkDeleteList .bulk-check').forEach(cb=>cb.checked=e.target.checked);
+  $('#bulkDeleteConfirm').onclick=()=>{
+    let selected=[...document.querySelectorAll('#bulkDeleteList .bulk-check:checked')];
+    if(!selected.length)return alert('삭제할 항목을 선택해 주세요.');
+    let hasRepeat=selected.some(cb=>cb.dataset.kind==='event'&&recurrence(events.find(e=>e.id===cb.dataset.id)||{}));
+    let msg=`선택한 ${selected.length}건을 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.`;
+    if(hasRepeat)msg+='\n반복 일정은 해당 반복 일정 전체가 삭제됩니다.';
+    if(!confirm(msg))return;
+    for(const cb of selected){
+      if(cb.dataset.kind==='visit')removeVisit(cb.dataset.id);
+      else if(cb.dataset.kind==='utility')removeUtility(cb.dataset.id);
+      else removeEvent(cb.dataset.id);
+    }
+    $('#bulkDeleteModal').classList.remove('open');render();queueSave();toast(`${selected.length}건을 삭제했습니다.`);
+  };
+}
+
 function openEventNew(){
-  editingId=null;$('#eventForm').reset();
+  editingId=null;$('#eventDelete').hidden=true;$('#eventForm').reset();
   $('#eventModalTitle').textContent='일정 등록';
   $('#eventModalHelp').textContent='날짜와 반복 주기를 입력하세요.';
   $('#eventSubmit').textContent='등록';toggleFields();
@@ -352,7 +426,7 @@ function openEventNew(){
   $('#eventModal').classList.add('open');
 }
 function configurePrimaryAction(){
-  let add=$('#add'),utilityAdd=$('#utilityAdd'),upload=$('#upload');if(!add)return;
+  let add=$('#add'),utilityAdd=$('#utilityAdd'),upload=$('#upload'),bulk=$('#bulkDeleteButton');if(!add)return;if(bulk)bulk.hidden=!adminUnlocked;
   if(view==='출입·작업관리'){
     add.textContent='＋ 방문업체 등록';add.onclick=()=>visitOpen();add.hidden=!adminUnlocked;
     utilityAdd.hidden=!adminUnlocked;utilityAdd.onclick=()=>utilityOpen();
@@ -417,7 +491,7 @@ function copyVisitDetails(id){
   toast('이전 방문내용을 불러왔습니다. 날짜만 확인해 주세요.');
 }
 function visitOpen(id=null){
-  editingVisitId=id;selectedVendorId=null;
+  editingVisitId=id;selectedVendorId=null;$('#visitDelete').hidden=!id;
   let f=$('#visitForm');f.reset();
   $('#vendorSuggestions').hidden=true;$('#vendorSuggestions').innerHTML='';$('#vendorMatchNote').textContent='';
   document.querySelectorAll('#visitZones input[name="zones"]').forEach(cb=>cb.checked=false);
@@ -447,7 +521,7 @@ function bindVisitClicks(){
 }
 
 function utilityOpen(id=null){
-  editingUtilityId=id;
+  editingUtilityId=id;$('#utilityDelete').hidden=!id;
   let f=$('#utilityForm');f.reset();
   document.querySelectorAll('#utilityTargets input[name="targets"],#utilityDepartments input[name="departments"]').forEach(cb=>cb.checked=false);
   document.querySelectorAll('#utilityForm input[name="shutdown"]').forEach(r=>r.checked=false);
@@ -580,7 +654,7 @@ function editOpen(id){
   editingId=id;let f=$('#eventForm');f.reset();
   $('#eventModalTitle').textContent='일정 수정';
   $('#eventModalHelp').textContent='날짜를 포함한 일정 정보를 수정할 수 있습니다.';
-  $('#eventSubmit').textContent='수정 저장';
+  $('#eventSubmit').textContent='수정 저장';$('#eventDelete').hidden=false;
   f.elements.dept.value=item.dept;f.elements.date.value=item.date;f.elements.name.value=item.name||'';f.elements.description.value=item.description||'';
   $('#timeMode').value=item.time?'on':'off';$('#timeDigits').value=(item.time||'').replace(':','');
   $('#endMode').value=item.endTime?'on':'off';$('#endDigits').value=(item.endTime||'').replace(':','');
