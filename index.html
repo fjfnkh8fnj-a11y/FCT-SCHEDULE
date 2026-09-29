@@ -86,6 +86,11 @@ body.locked .app{display:none!important}
 .month-summary b{display:block;font-size:24px;color:#173965}.month-summary span{font-size:12px;color:#68778b}
 @media(max-width:700px){.week-row{grid-template-columns:52px 70px 1fr;font-size:13px}.week-body{padding:0 10px}.month-summary{grid-template-columns:repeat(3,1fr)}.month-summary .summary-box{padding:10px 6px}.month-summary b{font-size:20px}}
 
+
+.adjacent-months{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.adjacent-month-btn{border:1px solid #b9cbe0;background:#edf5ff;color:#245f9e;border-radius:16px;padding:5px 9px;font-size:11px;font-weight:800;cursor:pointer}
+.adjacent-month-btn:hover{background:#e1efff}
+@media(max-width:700px){.week-head{align-items:flex-start;flex-wrap:wrap}.adjacent-months{width:100%;justify-content:flex-start}.adjacent-month-btn{padding:5px 8px}}
 </style>
 </head>
 <body class="locked">
@@ -591,13 +596,36 @@ function setupUtilities(){
   };
 }
 function utilityTimeLabel(w){return w.startTime&&w.endTime?`${w.startTime}~${w.endTime}`:w.startTime||w.endTime||'시간 미지정'}
+
+function adjacentManagementCounts(rawStart,rawEnd,monthStart,monthEnd){
+  let map={};
+  let raw=[
+    ...visitOccurrences(rawStart,rawEnd).map(v=>({date:v.date})),
+    ...utilityWorks.filter(w=>valid(w.workDate)&&w.workDate>=rawStart&&w.workDate<=rawEnd).map(w=>({date:w.workDate}))
+  ];
+  for(const x of raw){
+    if(x.date>=monthStart&&x.date<=monthEnd)continue;
+    let key=x.date.slice(0,7);
+    map[key]=(map[key]||0)+1;
+  }
+  return Object.keys(map).sort().map(key=>({key,count:map[key]}));
+}
 function bindManagementClicks(){
+  let moveAdjacent=el=>{
+    let ym=el.dataset.adjMonth;
+    if(!/^\d{4}-\d{2}$/.test(ym))return;
+    date=new Date(+ym.slice(0,4),+ym.slice(5,7)-1,1);
+    render();
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
   $('#content').onclick=e=>{
+    let a=e.target.closest('[data-adj-month]');if(a){moveAdjacent(a);return}
     let v=e.target.closest('[data-visit]');if(v){visitOpen(v.dataset.visit);return}
     let u=e.target.closest('[data-utility]');if(u)utilityOpen(u.dataset.utility);
   };
   $('#content').onkeydown=e=>{
     if(e.key!=='Enter'&&e.key!==' ')return;
+    let a=e.target.closest('[data-adj-month]');if(a){e.preventDefault();moveAdjacent(a);return}
     let v=e.target.closest('[data-visit]');if(v){e.preventDefault();visitOpen(v.dataset.visit);return}
     let u=e.target.closest('[data-utility]');if(u){e.preventDefault();utilityOpen(u.dataset.utility)}
   };
@@ -626,7 +654,7 @@ function renderManagementView(){
     let clippedEnd=rawEnd>lastDay?new Date(lastDay):rawEnd;
     let ws=ymd(clippedStart),we=ymd(clippedEnd);
     let weekItems=items.filter(x=>x.date>=ws&&x.date<=we);
-    weeks.push({no:weekNo++,start:ws,end:we,items:weekItems});
+    let adjacent=adjacentManagementCounts(ymd(rawStart),ymd(rawEnd),monthStart,monthEnd);weeks.push({no:weekNo++,start:ymd(rawStart),end:ymd(rawEnd),items:weekItems,adjacent});
     cursor.setDate(cursor.getDate()+7);
   }
 
@@ -641,8 +669,13 @@ function renderManagementView(){
         :[dept,time,(x.targets||[]).join(', '),x.location].filter(Boolean).join(' · ');
       let attr=x.kind==='visit'?`data-visit="${esc(x.id)}"`:`data-utility="${esc(x.id)}"`;
       return `<div class="week-row" ${attr} tabindex="0"><div class="week-date">${esc(x.date.slice(5))}</div><div><span class="week-type ${x.kind}">${type}</span></div><div><strong>${esc(label)}</strong><small>${esc(meta)}</small></div></div>`;
-    }).join(''):'<div class="empty" style="padding:13px 0">등록된 일정이 없습니다.</div>';
-    return `<section class="week-block"><div class="week-head"><h3>${w.no}주차</h3><small>${esc(w.start.slice(5))} ~ ${esc(w.end.slice(5))}</small></div><div class="week-body">${rows}</div></section>`;
+    }).join(''):'<div class="empty" style="padding:13px 0">'+(m+1)+'월 등록 일정이 없습니다.</div>';
+    let notices=(w.adjacent||[]).map(a=>{
+      let yy=Number(a.key.slice(0,4)),mm=Number(a.key.slice(5,7));
+      let label=(yy!==y?yy+'년 ':'')+mm+'월 일정 '+a.count+'건 있음 →';
+      return '<button type="button" class="adjacent-month-btn" data-adj-month="'+esc(a.key)+'">'+esc(label)+'</button>';
+    }).join('');
+    return '<section class="week-block"><div class="week-head"><div><h3>'+w.no+'주차</h3><small>'+esc(w.start.slice(5))+' ~ '+esc(w.end.slice(5))+'</small></div>'+(notices?'<div class="adjacent-months">'+notices+'</div>':'')+'</div><div class="week-body">'+rows+'</div></section>';
   }).join('');
 
   let first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),count=Math.ceil((first+days)/7)*7;
@@ -752,13 +785,13 @@ function setupHome(){
 function setupExcel(){$('#download').onclick=()=>{if(!window.XLSX)return alert('엑셀 모듈을 불러오지 못했습니다.');if(view==='출입·작업관리'){
   let visitRows=visits.slice().sort((a,b)=>(a.startDate||'').localeCompare(b.startDate||'')).map(v=>({담당부서:v.dept||'부서 미지정',업체명:v.company,방문시작일:v.startDate,방문종료일:v.endDate,시작시간:v.startTime||'',종료시간:v.endTime||'',방문인원:v.headcount||1,방문대표자:v.representative||'',대표자연락처:v.phone||'',담당자:v.manager||'',출입증지급:v.badgeStatus||'미지급',출입구역:(v.zones||[]).join(', '),신청사유:v.reason||''}));
   let utilityRows=utilityWorks.slice().sort((a,b)=>(a.workDate||'').localeCompare(b.workDate||'')).map(w=>({담당부서:w.dept||'부서 미지정',작업명:w.workName,작업대상유틸리티:(w.targets||[]).join(', '),작업예정일:w.workDate,시작시간:w.startTime||'',종료시간:w.endTime||'',작업내용:w.workContent||'',작업장소:w.location||'',작업담당자:w.manager||'',작업업체:w.company||'',유틸리티차단여부:w.shutdown||'',관련부서협의:(w.departments||[]).join(', '),비고:w.note||''}));
-  let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(visitRows),'방문업체');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(utilityRows),'유틸리티작업');XLSX.writeFile(wb,'FCT_출입작업관리_rev.28.xlsx');return}let rows;
+  let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(visitRows),'방문업체');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(utilityRows),'유틸리티작업');XLSX.writeFile(wb,'FCT_출입작업관리_rev.29.xlsx');return}let rows;
 if(depts.includes(view)){
   let y=date.getFullYear(),m=date.getMonth(),start=`${y}-${pad(m+1)}-01`,end=`${y}-${pad(m+1)}-${pad(new Date(y,m+1,0).getDate())}`;
   rows=filtered(occurrences(start,end)).map(e=>({담당부서:e.dept,날짜:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:e.kind?'':(recurrenceLabel(e)||'한 번만'),종료시간:e.endTime||'',구분:e.kind==='visit'?'방문업체':e.kind==='utility'?'유틸리티 작업':'일반 일정'}));
 }else{
   rows=events.map(e=>({담당부서:e.dept,날짜:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:recurrenceLabel(e)||'한 번만',종료시간:e.endTime||'',구분:'일반 일정'}));
-}let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.28.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['날짜']||r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
+}let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.29.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['날짜']||r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
 setAdminMode(false);setupForms();setupVisits();setupUtilities();setupBulkDelete();setupQr();setupExcel();setupHome();setupLock();setTimeout(()=>$('#lockPin').focus(),0);
 })();
 
