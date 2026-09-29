@@ -47,6 +47,23 @@ body.locked .app{display:none!important}
 .visit-event{--c:#2470bd}
 @media(max-width:700px){.visit-form-grid{grid-template-columns:100px minmax(0,1fr)}.visit-wide{grid-column:2}.visit-dialog{padding:16px}.visit-period{display:grid;grid-template-columns:1fr 1fr}.visit-period input[type=date],.visit-period input[type=time]{width:100%;min-width:0}.visit-list-row{grid-template-columns:72px 1fr}.visit-list-row>div:last-child{grid-column:2}.recent-visit{align-items:flex-start;flex-direction:column}}
 
+
+.utility-dialog{width:min(900px,100%)}
+.utility-title{margin:0 0 12px;text-align:center;background:#102747;color:white;padding:13px;border-radius:10px;font-size:24px}
+.utility-grid{display:grid;grid-template-columns:150px minmax(0,1fr);border:1px solid #b9c5d2;border-right:0;border-bottom:0}
+.utility-key,.utility-cell{border-right:1px solid #b9c5d2;border-bottom:1px solid #b9c5d2}
+.utility-key{display:flex;align-items:center;justify-content:center;padding:10px;background:#173965;color:white;font-weight:800;text-align:center}
+.utility-cell{padding:9px;background:#fffbea}
+.utility-cell input[type=text],.utility-cell input[type=date],.utility-cell input[type=time],.utility-cell textarea{width:100%;border:1px solid #c6d0dc;border-radius:6px;padding:10px;background:white}
+.utility-cell textarea{min-height:75px;resize:vertical}
+.utility-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px 12px}
+.utility-options label{display:flex;align-items:center;gap:6px;background:#eaf0f8;border:1px solid #cbd6e3;border-radius:6px;padding:8px 9px;font-size:13px}
+.utility-options input{width:auto}
+.utility-inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.utility-inline input{flex:1;min-width:130px}
+.management-legend{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px}.management-legend span{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#52647a}.legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.utility-event{--c:#7a5cbd}.visit-event{--c:#2470bd}
+@media(max-width:700px){.utility-grid{grid-template-columns:105px minmax(0,1fr)}.utility-options{grid-template-columns:1fr 1fr}.utility-dialog{padding:14px}.utility-inline{display:grid;grid-template-columns:1fr 1fr}}
+
 </style>
 </head>
 <body class="locked">
@@ -73,6 +90,7 @@ body.locked .app{display:none!important}
         <button class="secondary admin-only" id="upload" type="button" hidden>엑셀 등록</button>
         <input id="excelFile" type="file" accept=".xlsx,.xls" hidden>
         <button class="primary admin-only" id="add" type="button" hidden>＋ 일정 등록</button>
+        <button class="primary admin-only" id="utilityAdd" type="button" hidden>＋ 유틸리티 작업신청</button>
       </div>
     </header>
     <section id="content"><div class="card below"><h2>일정 달력을 여는 중입니다</h2><p>잠시 후 공용 일정 데이터가 표시됩니다.</p></div></section>
@@ -155,6 +173,72 @@ body.locked .app{display:none!important}
   </form>
 </div>
 
+
+<div class="modal" id="utilityModal">
+  <form class="dialog utility-dialog" id="utilityForm">
+    <h2 class="utility-title" id="utilityModalTitle">유틸리티 작업 신청서</h2>
+    <div class="utility-grid">
+      <div class="utility-key">1. 작업명</div>
+      <div class="utility-cell"><input name="workName" type="text" maxlength="100" required placeholder="예) 질소 배관 밸브 교체 작업"></div>
+
+      <div class="utility-key">2. 작업 대상 유틸리티</div>
+      <div class="utility-cell"><div class="utility-options" id="utilityTargets">
+        <label><input type="checkbox" name="targets" value="수소">수소</label>
+        <label><input type="checkbox" name="targets" value="질소">질소</label>
+        <label><input type="checkbox" name="targets" value="CDA">CDA</label>
+        <label><input type="checkbox" name="targets" value="DI">DI</label>
+        <label><input type="checkbox" name="targets" value="공조기">공조기</label>
+        <label><input type="checkbox" name="targets" value="스크러버">스크러버</label>
+        <label><input type="checkbox" name="targets" value="흡착탑">흡착탑</label>
+        <label><input type="checkbox" name="targets" value="폐수처리장">폐수처리장</label>
+        <label><input type="checkbox" name="targets" value="열배기">열배기</label>
+        <label><input type="checkbox" name="targets" value="PCW">PCW</label>
+        <label><input type="checkbox" name="targets" value="소성동 칠러">소성동 칠러</label>
+        <label><input type="checkbox" name="targets" value="기타">기타</label>
+      </div></div>
+
+      <div class="utility-key">3. 작업 예정일</div>
+      <div class="utility-cell"><input name="workDate" type="date" required></div>
+
+      <div class="utility-key">4. 작업시간</div>
+      <div class="utility-cell"><div class="utility-inline"><input name="startTime" type="time"><span>~</span><input name="endTime" type="time"></div></div>
+
+      <div class="utility-key">5. 작업내용</div>
+      <div class="utility-cell"><textarea name="workContent" maxlength="800" required placeholder="작업 목적 및 구체적인 작업 내용을 입력하세요"></textarea></div>
+
+      <div class="utility-key">6. 작업장소</div>
+      <div class="utility-cell"><input name="location" type="text" maxlength="120" required placeholder="예) 화성사업장 생산1동 유틸리티실"></div>
+
+      <div class="utility-key">7. 작업담당자</div>
+      <div class="utility-cell"><input name="manager" type="text" maxlength="60" required placeholder="예) 설비관리팀 / 홍길동"></div>
+
+      <div class="utility-key">8. 작업업체</div>
+      <div class="utility-cell"><input name="company" type="text" maxlength="100" placeholder="외주 작업 시 업체명 및 작업자 기재 (해당 없을 시 공란)"></div>
+
+      <div class="utility-key">9. 유틸리티 차단 여부</div>
+      <div class="utility-cell"><div class="utility-options">
+        <label><input type="radio" name="shutdown" value="차단 필요" required>차단 필요</label>
+        <label><input type="radio" name="shutdown" value="부분 차단">부분 차단</label>
+        <label><input type="radio" name="shutdown" value="차단 없음">차단 없음</label>
+      </div></div>
+
+      <div class="utility-key">10. 관련 부서 협의</div>
+      <div class="utility-cell"><div class="utility-options" id="utilityDepartments">
+        <label><input type="checkbox" name="departments" value="전반">전반</label>
+        <label><input type="checkbox" name="departments" value="박막">박막</label>
+        <label><input type="checkbox" name="departments" value="가공">가공</label>
+        <label><input type="checkbox" name="departments" value="소성">소성</label>
+        <label><input type="checkbox" name="departments" value="품질">품질</label>
+        <label><input type="checkbox" name="departments" value="경영지원">경영지원</label>
+      </div></div>
+
+      <div class="utility-key">11. 비고</div>
+      <div class="utility-cell"><textarea name="note" maxlength="500" placeholder="기타 특이사항"></textarea></div>
+    </div>
+    <div class="actions"><button class="secondary" type="button" id="utilityCancel">취소</button><button class="primary" id="utilitySubmit">등록</button></div>
+  </form>
+</div>
+
 <div class="modal" id="holidayModal">
   <form class="dialog" id="holidayForm"><h2>공휴일 추가·수정</h2><p>누락된 공휴일이나 임시공휴일을 날짜별로 등록할 수 있습니다.</p><label class="field">날짜<input name="holidayDate" type="date" required></label><label class="field">공휴일 이름<input name="holidayName" maxlength="40" required placeholder="예: 임시공휴일"></label><p class="hint" id="holidayBaseNote"></p><div class="actions"><button class="secondary" type="button" id="holidayRemove">직접 등록 삭제</button><button class="secondary" type="button" id="holidayCancel">취소</button><button class="primary">저장</button></div></form>
 </div>
@@ -180,7 +264,7 @@ const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const valid=iso=>/^\d{4}-\d{2}-\d{2}$/.test(iso)&&!Number.isNaN(Date.parse(iso+'T12:00:00'));
 let date=new Date(today.getFullYear(),today.getMonth(),1),view='전체 일정';
-let events=[],history={},customHolidays={},vendors=[],visits=[],editingId=null,editingVisitId=null,selectedVendorId=null,saveTimer=null,cloudReady=false,adminUnlocked=false,adminPin='';
+let events=[],history={},customHolidays={},vendors=[],visits=[],utilityWorks=[],editingId=null,editingVisitId=null,editingUtilityId=null,selectedVendorId=null,saveTimer=null,cloudReady=false,adminUnlocked=false,adminPin='';
 const officialHolidays={2026:{'01-01':'신정','02-16':'설날 연휴','02-17':'설날','02-18':'설날 연휴','03-01':'삼일절','03-02':'대체공휴일','05-01':'노동절','05-05':'어린이날','05-24':'부처님오신날','05-25':'대체공휴일','06-03':'지방선거일','06-06':'현충일','07-17':'제헌절','08-15':'광복절','08-17':'대체공휴일','09-24':'추석 연휴','09-25':'추석','09-26':'추석 연휴','10-03':'개천절','10-05':'대체공휴일','10-09':'한글날','12-25':'성탄절'},2027:{'01-01':'신정','02-06':'설날 연휴','02-07':'설날','02-08':'설날 연휴','02-09':'대체공휴일','03-01':'삼일절','05-01':'노동절','05-03':'대체공휴일','05-05':'어린이날','05-13':'부처님오신날','06-06':'현충일','07-17':'제헌절','07-19':'대체공휴일','08-15':'광복절','08-16':'대체공휴일','09-14':'추석 연휴','09-15':'추석','09-16':'추석 연휴','10-03':'개천절','10-04':'대체공휴일','10-09':'한글날','10-11':'대체공휴일','12-25':'성탄절','12-27':'대체공휴일'}};
 const fixedHolidays={'01-01':'신정','03-01':'삼일절','05-01':'노동절','05-05':'어린이날','06-06':'현충일','07-17':'제헌절','08-15':'광복절','10-03':'개천절','10-09':'한글날','12-25':'성탄절'};
 function holidayName(iso){let y=Number(iso.slice(0,4));return customHolidays[iso]||officialHolidays[y]?.[iso.slice(5)]||(y>2027?fixedHolidays[iso.slice(5)]:'')||''}
@@ -202,6 +286,7 @@ async function loadCloud(pin){
   customHolidays=s.custom_holidays&&typeof s.custom_holidays==='object'?s.custom_holidays:{};
   vendors=Array.isArray(s.vendors)?s.vendors:[];
   visits=Array.isArray(s.visits)?s.visits:[];
+  utilityWorks=Array.isArray(s.utility_works)?s.utility_works:[];
   cloudReady=true;adminPin=pin;setAdminMode(true);
   document.body.classList.remove('locked');$('#lockScreen').hidden=true;
   setCloud('클라우드 연결됨','ok');render();
@@ -219,12 +304,12 @@ function setupLock(){
   };
 }
 function lockApp(){
-  adminPin='';adminUnlocked=false;cloudReady=false;events=[];history={};customHolidays={};vendors=[];visits=[];editingVisitId=null;selectedVendorId=null;
+  adminPin='';adminUnlocked=false;cloudReady=false;events=[];history={};customHolidays={};vendors=[];visits=[];utilityWorks=[];editingVisitId=null;editingUtilityId=null;selectedVendorId=null;
   document.body.classList.add('locked');$('#lockScreen').hidden=false;$('#lockPin').value='';$('#lockMsg').textContent='';
   $('#content').innerHTML='';setTimeout(()=>$('#lockPin').focus(),0);
 }
 function queueSave(){if(!cloudReady)return;clearTimeout(saveTimer);saveTimer=setTimeout(saveCloud,300)}
-async function saveCloud(){if(!adminUnlocked||!adminPin)return;setCloud('클라우드 저장 중','saving');try{await adminRequest('save',{events,history,custom_holidays:customHolidays,vendors,visits});setCloud('클라우드 저장됨','ok')}catch(err){console.error(err);setCloud('저장 실패','error');if(/PIN|unauthorized|인증/i.test(err.message)){adminPin='';setAdminMode(false)}toast('클라우드 저장에 실패했습니다.')}}
+async function saveCloud(){if(!adminUnlocked||!adminPin)return;setCloud('클라우드 저장 중','saving');try{await adminRequest('save',{events,history,custom_holidays:customHolidays,vendors,visits,utility_works:utilityWorks});setCloud('클라우드 저장됨','ok')}catch(err){console.error(err);setCloud('저장 실패','error');if(/PIN|unauthorized|인증/i.test(err.message)){adminPin='';setAdminMode(false)}toast('클라우드 저장에 실패했습니다.')}}
 function toast(msg){let t=$('#toast');t.textContent=msg;t.style.display='block';clearTimeout(t._timer);t._timer=setTimeout(()=>t.style.display='none',2400)}
 function nav(){let views=['전체 일정','연간일정','방문업체',...depts];$('#nav').innerHTML=views.map(v=>`<button class="nav ${view===v?'active':''}" data-view="${v}" type="button">${v}</button>`).join('');$('#nav').querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{view=b.dataset.view;render()})}
 function filtered(list){return depts.includes(view)?list.filter(e=>e.dept===view):list}
@@ -406,7 +491,7 @@ function toggleFields(){$('#timeFields').hidden=$('#timeMode').value!=='on';$('#
 function setupForms(){$('#adminButton').onclick=lockApp;$('#dept').innerHTML=depts.map(d=>`<option>${d}</option>`).join('');$('#add').onclick=openEventNew;$('#eventCancel').onclick=()=>$('#eventModal').classList.remove('open');$('#eventModal').onclick=e=>{if(e.target.id==='eventModal')$('#eventModal').classList.remove('open')};$('#timeMode').onchange=toggleFields;$('#endMode').onchange=toggleFields;$('#repeatMode').onchange=toggleFields;['timeDigits','endDigits'].forEach(id=>$('#'+id).oninput=e=>e.target.value=e.target.value.replace(/\D/g,'').slice(0,4));$('#eventForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),td=String(f.get('timeDigits')||''),ed=String(f.get('endDigits')||''),count=Number(f.get('intervalCount'));if(f.get('timeMode')==='on'&&!/^([01]\d|2[0-3])[0-5]\d$/.test(td))return alert('시간을 4자리 숫자로 입력해 주세요.');if(f.get('endMode')==='on'&&!/^([01]\d|2[0-3])[0-5]\d$/.test(ed))return alert('종료 시간을 4자리 숫자로 입력해 주세요.');if(f.get('timeMode')==='on'&&f.get('endMode')==='on'&&ed<=td)return alert('종료 시간은 시작 시간보다 늦어야 합니다.');if(f.get('repeatMode')==='on'&&(!Number.isInteger(count)||count<1||count>99))return alert('반복 간격을 확인해 주세요.');let description=String(f.get('description')||'').trim();if(!description)return alert('내용을 입력해 주세요.');let item={id:crypto.randomUUID?.()||String(Date.now()),dept:f.get('dept'),date:f.get('date'),repeat:f.get('repeatMode')==='on'?'interval':'none',intervalCount:f.get('repeatMode')==='on'?count:null,intervalUnit:f.get('repeatMode')==='on'?f.get('intervalUnit'):null,time:f.get('timeMode')==='on'?td.slice(0,2)+':'+td.slice(2):'',endTime:f.get('endMode')==='on'?ed.slice(0,2)+':'+ed.slice(2):'',name:String(f.get('name')||'').trim(),description};if(!item.name||!valid(item.date))return;if(editingId){let idx=events.findIndex(x=>x.id===editingId);if(idx<0)return;item.id=editingId;events[idx]=item;toast('일정이 수정되었습니다.')}else{events.push(item);toast('일정이 등록되었습니다.')}date=new Date(+item.date.slice(0,4),+item.date.slice(5,7)-1,1);editingId=null;$('#eventModal').classList.remove('open');render();queueSave()};$('#holidayForm').elements.holidayDate.onchange=updateHolidayForm;$('#holidayCancel').onclick=()=>$('#holidayModal').classList.remove('open');$('#holidayForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),iso=f.get('holidayDate'),name=String(f.get('holidayName')||'').trim();if(!valid(iso)||!name)return;customHolidays[iso]=name;$('#holidayModal').classList.remove('open');date=new Date(+iso.slice(0,4),+iso.slice(5,7)-1,1);render();queueSave()};$('#holidayRemove').onclick=()=>{let iso=$('#holidayForm').elements.holidayDate.value;delete customHolidays[iso];$('#holidayModal').classList.remove('open');render();queueSave()};toggleFields()}
 function setupQr(){let made=false;$('#qrButton').onclick=()=>{$('#qrModal').classList.add('open');if(!made&&window.QRCode){new QRCode($('#qrcode'),{text:APP_URL,width:240,height:240,correctLevel:QRCode.CorrectLevel.M});made=true}};$('#qrClose').onclick=()=>$('#qrModal').classList.remove('open');$('#qrModal').onclick=e=>{if(e.target.id==='qrModal')$('#qrModal').classList.remove('open')}}
 const headers=['담당부서','날짜','시간','일정명','내용','반복주기','종료시간'];
-function setupExcel(){$('#download').onclick=()=>{if(!window.XLSX)return alert('엑셀 모듈을 불러오지 못했습니다.');if(view==='방문업체'){let rows=visits.slice().sort((a,b)=>(a.startDate||'').localeCompare(b.startDate||'')).map(v=>({업체명:v.company,방문시작일:v.startDate,방문종료일:v.endDate,시작시간:v.startTime||'',종료시간:v.endTime||'',방문인원:v.headcount||1,방문대표자:v.representative||'',대표자연락처:v.phone||'',담당자:v.manager||'',출입증지급:v.badgeStatus||'미지급',출입구역:(v.zones||[]).join(', '),신청사유:v.reason||''}));let ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'방문업체');XLSX.writeFile(wb,'FCT_방문업체_rev.24.xlsx');return}let rows=events.filter(e=>!depts.includes(view)||e.dept===view).map(e=>({담당부서:e.dept,날짜:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:recurrenceLabel(e)||'한 번만',종료시간:e.endTime||''}));let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.24.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['날짜']||r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
+function setupExcel(){$('#download').onclick=()=>{if(!window.XLSX)return alert('엑셀 모듈을 불러오지 못했습니다.');if(view==='방문업체'){let rows=visits.slice().sort((a,b)=>(a.startDate||'').localeCompare(b.startDate||'')).map(v=>({업체명:v.company,방문시작일:v.startDate,방문종료일:v.endDate,시작시간:v.startTime||'',종료시간:v.endTime||'',방문인원:v.headcount||1,방문대표자:v.representative||'',대표자연락처:v.phone||'',담당자:v.manager||'',출입증지급:v.badgeStatus||'미지급',출입구역:(v.zones||[]).join(', '),신청사유:v.reason||''}));let ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'방문업체');XLSX.writeFile(wb,'FCT_방문업체_rev.25.xlsx');return}let rows=events.filter(e=>!depts.includes(view)||e.dept===view).map(e=>({담당부서:e.dept,날짜:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:recurrenceLabel(e)||'한 번만',종료시간:e.endTime||''}));let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.25.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['날짜']||r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
 setAdminMode(false);setupForms();setupVisits();setupQr();setupExcel();setupLock();setTimeout(()=>$('#lockPin').focus(),0);
 })();
 
