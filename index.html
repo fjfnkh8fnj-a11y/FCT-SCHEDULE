@@ -166,7 +166,7 @@ body.locked .app{display:none!important}
     <section id="content"><div class="card below"><h2>일정 달력을 여는 중입니다</h2><p>잠시 후 공용 일정 데이터가 표시됩니다.</p></div></section>
     <footer class="utilitybar">
       <span class="cloud-status" id="cloudStatus" data-state="saving"><span class="cloud-dot"></span><span id="cloudStatusText">클라우드 연결 중</span></span>
-      <span class="app-revision" id="appRevision">rev.35</span>
+      <span class="app-revision" id="appRevision">rev.36</span>
       <button id="qrButton" type="button">접속 QR</button>
       <button id="adminButton" type="button">로그아웃</button>
     </footer>
@@ -394,7 +394,7 @@ body.locked .app{display:none!important}
 'use strict';
 const SUPABASE_URL='https://clmcenjnujrtuyjwrnim.supabase.co';
 const APP_URL='https://fjfnkh8fnj-a11y.github.io/FCT-SCHEDULE/';
-const APP_VERSION='rev.35';
+const APP_VERSION='rev.36';
 const ADMIN_API=SUPABASE_URL+'/functions/v1/fct-schedule-admin';
 const depts=['품질','박막','전반','가공','소성','경영지원'];
 const colors=['#306fc0','#825bb6','#00a498','#dd8d28','#cc6279','#586c84'];
@@ -404,7 +404,7 @@ const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const valid=iso=>/^\d{4}-\d{2}-\d{2}$/.test(iso)&&!Number.isNaN(Date.parse(iso+'T12:00:00'));
 let date=new Date(today.getFullYear(),today.getMonth(),1),view='전체 일정';
-let events=[],history={},customHolidays={},vendors=[],visits=[],utilityWorks=[],editingId=null,detailEventId=null,detailOccurrenceDate=null,detailScheduledDate=null,detailOccurrenceIndex=null,editingHistoryId=null,editingVisitId=null,editingUtilityId=null,selectedVendorId=null,saveTimer=null,cloudReady=false,adminUnlocked=false,adminPin='';
+let events=[],history={},customHolidays={},vendors=[],visits=[],utilityWorks=[],editingId=null,detailEventId=null,detailOccurrenceDate=null,detailScheduledDate=null,detailOccurrenceIndex=null,editingHistoryId=null,editingVisitId=null,editingUtilityId=null,selectedVendorId=null,saveTimer=null,saveInFlight=false,savePending=false,syncedState=null,serverVersions={},cloudReady=false,adminUnlocked=false,adminPin='';
 const officialHolidays={2026:{'01-01':'신정','02-16':'설날 연휴','02-17':'설날','02-18':'설날 연휴','03-01':'삼일절','03-02':'대체공휴일','05-01':'노동절','05-05':'어린이날','05-24':'부처님오신날','05-25':'대체공휴일','06-03':'지방선거일','06-06':'현충일','07-17':'제헌절','08-15':'광복절','08-17':'대체공휴일','09-24':'추석 연휴','09-25':'추석','09-26':'추석 연휴','10-03':'개천절','10-05':'대체공휴일','10-09':'한글날','12-25':'성탄절'},2027:{'01-01':'신정','02-06':'설날 연휴','02-07':'설날','02-08':'설날 연휴','02-09':'대체공휴일','03-01':'삼일절','05-01':'노동절','05-03':'대체공휴일','05-05':'어린이날','05-13':'부처님오신날','06-06':'현충일','07-17':'제헌절','07-19':'대체공휴일','08-15':'광복절','08-16':'대체공휴일','09-14':'추석 연휴','09-15':'추석','09-16':'추석 연휴','10-03':'개천절','10-04':'대체공휴일','10-09':'한글날','10-11':'대체공휴일','12-25':'성탄절','12-27':'대체공휴일'}};
 const fixedHolidays={'01-01':'신정','03-01':'삼일절','05-01':'노동절','05-05':'어린이날','06-06':'현충일','07-17':'제헌절','08-15':'광복절','10-03':'개천절','10-09':'한글날','12-25':'성탄절'};
 function holidayName(iso){let y=Number(iso.slice(0,4));return customHolidays[iso]||officialHolidays[y]?.[iso.slice(5)]||(y>2027?fixedHolidays[iso.slice(5)]:'')||''}
@@ -488,7 +488,43 @@ function calendarEventText(e){
 function detailAttrs(e,iso=e.date){return `data-detail="${esc(e.id)}" data-kind="${esc(e.kind||'event')}" data-occurrence="${esc(iso)}" data-scheduled="${esc(e.scheduledDate||iso)}" data-occ-index="${Number.isInteger(e.occurrenceIndex)?e.occurrenceIndex:0}" data-auto="${e.autoOccurrence?'1':'0'}" tabindex="0"`}
 function setCloud(text,state){$('#cloudStatus').dataset.state=state;$('#cloudStatusText').textContent=text}
 function setAdminMode(on){adminUnlocked=Boolean(on);document.querySelectorAll('.admin-only').forEach(el=>el.hidden=!adminUnlocked);$('#adminButton').textContent='로그아웃'}
-async function adminRequest(action,state=null,pin=adminPin){let r=await fetch(ADMIN_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,pin,state})});let body=await r.json().catch(()=>({}));if(!r.ok)throw new Error(body.message||body.error||('HTTP '+r.status));return body}
+async function adminRequest(action,state=null,pin=adminPin){
+  let r=await fetch(ADMIN_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,pin,state})});
+  let body=await r.json().catch(()=>({}));
+  if(!r.ok){let err=new Error(body.message||body.error||('HTTP '+r.status));err.status=r.status;err.body=body;throw err}
+  return body
+}
+function localState(){
+  return {events,history,custom_holidays:customHolidays,vendors,visits,utility_works:utilityWorks}
+}
+function cloneState(value){return JSON.parse(JSON.stringify(value))}
+function recordMap(state){
+  let out={};
+  let add=(type,id,payload)=>{if(id!==undefined&&id!==null&&String(id)!=='')out[type+':'+String(id)]={record_type:type,record_id:String(id),payload}};
+  for(const x of state?.events||[])add('event',x.id,x);
+  for(const x of state?.vendors||[])add('vendor',x.id,x);
+  for(const x of state?.visits||[])add('visit',x.id,x);
+  for(const x of state?.utility_works||[])add('utility',x.id,x);
+  for(const [id,payload] of Object.entries(state?.history||{}))add('history',id,payload);
+  for(const [id,name] of Object.entries(state?.custom_holidays||{}))add('holiday',id,{name});
+  return out
+}
+function buildPatch(base,current){
+  let before=recordMap(base||{events:[],history:{},custom_holidays:{},vendors:[],visits:[],utility_works:[]});
+  let after=recordMap(current);
+  let ops=[];
+  for(const [key,row] of Object.entries(after)){
+    if(!before[key]||JSON.stringify(before[key].payload)!==JSON.stringify(row.payload)){
+      ops.push({op:'upsert',record_type:row.record_type,record_id:row.record_id,payload:row.payload,expected_version:serverVersions[key]||null});
+    }
+  }
+  for(const [key,row] of Object.entries(before)){
+    if(!after[key]){
+      ops.push({op:'delete',record_type:row.record_type,record_id:row.record_id,expected_version:serverVersions[key]||null});
+    }
+  }
+  return ops
+}
 async function loadCloud(pin){
   setCloud('클라우드 연결 중','saving');
   let body=await adminRequest('load',null,pin);
@@ -499,9 +535,12 @@ async function loadCloud(pin){
   vendors=Array.isArray(s.vendors)?s.vendors:[];
   visits=Array.isArray(s.visits)?s.visits:[];
   utilityWorks=Array.isArray(s.utility_works)?s.utility_works:[];
+  serverVersions=body.versions&&typeof body.versions==='object'?body.versions:{};
+  syncedState=cloneState(localState());
+  saveInFlight=false;savePending=false;
   cloudReady=true;adminPin=pin;setAdminMode(true);
   document.body.classList.remove('locked');$('#lockScreen').hidden=true;
-  setCloud('클라우드 연결됨','ok');render();
+  setCloud('개별 저장 연결됨','ok');render();
 }
 function setupLock(){
   $('#lockForm').onsubmit=async e=>{
@@ -517,11 +556,45 @@ function setupLock(){
 }
 function lockApp(){
   adminPin='';adminUnlocked=false;cloudReady=false;events=[];history={};customHolidays={};vendors=[];visits=[];utilityWorks=[];detailEventId=null;detailOccurrenceDate=null;detailScheduledDate=null;detailOccurrenceIndex=null;editingHistoryId=null;editingVisitId=null;editingUtilityId=null;selectedVendorId=null;
+  syncedState=null;serverVersions={};saveInFlight=false;savePending=false;clearTimeout(saveTimer);
   document.body.classList.add('locked');$('#lockScreen').hidden=false;$('#lockPin').value='';$('#lockMsg').textContent='';
   $('#content').innerHTML='';setTimeout(()=>$('#lockPin').focus(),0);
 }
-function queueSave(){if(!cloudReady)return;clearTimeout(saveTimer);saveTimer=setTimeout(saveCloud,300)}
-async function saveCloud(){if(!adminUnlocked||!adminPin)return;setCloud('클라우드 저장 중','saving');try{await adminRequest('save',{events,history,custom_holidays:customHolidays,vendors,visits,utility_works:utilityWorks});setCloud('클라우드 저장됨','ok')}catch(err){console.error(err);setCloud('저장 실패','error');if(/PIN|unauthorized|인증/i.test(err.message)){adminPin='';setAdminMode(false)}toast('클라우드 저장에 실패했습니다.')}}
+function queueSave(){
+  if(!cloudReady)return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(saveCloud,300)
+}
+async function saveCloud(){
+  if(!adminUnlocked||!adminPin||!cloudReady)return;
+  if(saveInFlight){savePending=true;return}
+  let sentState=cloneState(localState());
+  let ops=buildPatch(syncedState,sentState);
+  if(!ops.length){setCloud('개별 저장됨','ok');return}
+  saveInFlight=true;setCloud('변경 항목 저장 중','saving');
+  try{
+    let result=await adminRequest('save_patch',{ops});
+    for(const [key,version] of Object.entries(result.versions||{})){
+      if(version===null)delete serverVersions[key];else serverVersions[key]=version;
+    }
+    syncedState=sentState;
+    setCloud('개별 저장됨','ok');
+  }catch(err){
+    console.error(err);
+    if(err.status===409){
+      setCloud('동시 수정 감지','error');
+      toast(err.message||'다른 사용자가 먼저 수정했습니다. 최신 데이터를 다시 불러옵니다.');
+      try{await loadCloud(adminPin)}catch(loadErr){console.error(loadErr);setCloud('최신화 실패','error')}
+    }else{
+      setCloud('저장 실패','error');
+      if(/PIN|unauthorized|인증/i.test(err.message)){adminPin='';setAdminMode(false)}
+      toast('클라우드 저장에 실패했습니다.');
+    }
+  }finally{
+    saveInFlight=false;
+    if(savePending){savePending=false;queueSave()}
+  }
+}
 function toast(msg){let t=$('#toast');t.textContent=msg;t.style.display='block';clearTimeout(t._timer);t._timer=setTimeout(()=>t.style.display='none',2400)}
 function nav(){let views=['전체 일정','연간일정','출입·작업관리',...depts];$('#nav').innerHTML=views.map(v=>`<button class="nav ${view===v?'active':''}" data-view="${v}" type="button">${v}</button>`).join('');$('#nav').querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{view=b.dataset.view;render()})}
 function filtered(list){return depts.includes(view)?list.filter(e=>e.dept===view):list}
@@ -1075,13 +1148,13 @@ function setupHome(){
 function setupExcel(){$('#download').onclick=()=>{if(!window.XLSX)return alert('엑셀 모듈을 불러오지 못했습니다.');if(view==='출입·작업관리'){
   let visitRows=visits.slice().sort((a,b)=>(a.startDate||'').localeCompare(b.startDate||'')).map(v=>({담당부서:v.dept||'부서 미지정',업체명:v.company,방문시작일:v.startDate,방문종료일:v.endDate,시작시간:v.startTime||'',종료시간:v.endTime||'',방문인원:v.headcount||1,방문대표자:v.representative||'',대표자연락처:v.phone||'',담당자:v.manager||'',출입증지급:v.badgeStatus||'미지급',출입구역:(v.zones||[]).join(', '),신청사유:v.reason||''}));
   let utilityRows=utilityWorks.slice().sort((a,b)=>(a.workDate||'').localeCompare(b.workDate||'')).map(w=>({담당부서:w.dept||'부서 미지정',작업명:w.workName,작업대상유틸리티:(w.targets||[]).join(', '),작업예정일:w.workDate,시작시간:w.startTime||'',종료시간:w.endTime||'',작업내용:w.workContent||'',작업장소:w.location||'',작업담당자:w.manager||'',작업업체:w.company||'',유틸리티차단여부:w.shutdown||'',관련부서협의:(w.departments||[]).join(', '),비고:w.note||''}));
-  let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(visitRows),'방문업체');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(utilityRows),'유틸리티작업');XLSX.writeFile(wb,'FCT_출입작업관리_rev.35.xlsx');return}let rows;
+  let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(visitRows),'방문업체');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(utilityRows),'유틸리티작업');XLSX.writeFile(wb,'FCT_출입작업관리_rev.36.xlsx');return}let rows;
 if(depts.includes(view)){
   let y=date.getFullYear(),m=date.getMonth(),start=`${y}-${pad(m+1)}-01`,end=`${y}-${pad(m+1)}-${pad(new Date(y,m+1,0).getDate())}`;
   rows=filtered(occurrences(start,end)).map(e=>({담당부서:e.dept,날짜:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:e.kind?'':(recurrenceLabel(e)||'한 번만'),종료시간:e.endTime||'',구분:e.kind==='visit'?'방문업체':e.kind==='utility'?'유틸리티 작업':'일반 일정'}));
 }else{
   rows=events.map(e=>({담당부서:e.dept,날짜:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:recurrenceLabel(e)||'한 번만',종료시간:e.endTime||'',구분:'일반 일정'}));
-}let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.35.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['날짜']||r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
+}let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.36.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['날짜']||r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
 setAdminMode(false);setupForms();setupEventDetail();setupVisits();setupUtilities();setupBulkDelete();setupQr();setupExcel();setupHome();setupLock();setTimeout(()=>$('#lockPin').focus(),0);
 })();
 
