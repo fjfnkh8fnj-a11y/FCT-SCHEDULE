@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="format-detection" content="telephone=no">
 <title>FCT 화인세라텍 | 통합 일정</title>
@@ -128,6 +131,8 @@ body.locked .app{display:none!important}
 .weekitem.kind-utility{background:#fffaf0;border-left:4px solid #c17a16;padding-left:10px;border-radius:6px}
 
 .dept-text{display:inline-block;margin-right:8px;color:#42566d;font-size:12px;font-weight:800}
+
+.app-revision{font-size:11px;font-weight:800;color:#6b7c90;background:#eef3f8;border:1px solid #d5e0eb;border-radius:12px;padding:3px 7px}
 </style>
 </head>
 <body class="locked">
@@ -161,6 +166,7 @@ body.locked .app{display:none!important}
     <section id="content"><div class="card below"><h2>일정 달력을 여는 중입니다</h2><p>잠시 후 공용 일정 데이터가 표시됩니다.</p></div></section>
     <footer class="utilitybar">
       <span class="cloud-status" id="cloudStatus" data-state="saving"><span class="cloud-dot"></span><span id="cloudStatusText">클라우드 연결 중</span></span>
+      <span class="app-revision" id="appRevision">rev.35</span>
       <button id="qrButton" type="button">접속 QR</button>
       <button id="adminButton" type="button">로그아웃</button>
     </footer>
@@ -388,6 +394,7 @@ body.locked .app{display:none!important}
 'use strict';
 const SUPABASE_URL='https://clmcenjnujrtuyjwrnim.supabase.co';
 const APP_URL='https://fjfnkh8fnj-a11y.github.io/FCT-SCHEDULE/';
+const APP_VERSION='rev.35';
 const ADMIN_API=SUPABASE_URL+'/functions/v1/fct-schedule-admin';
 const depts=['품질','박막','전반','가공','소성','경영지원'];
 const colors=['#306fc0','#825bb6','#00a498','#dd8d28','#cc6279','#586c84'];
@@ -1068,13 +1075,13 @@ function setupHome(){
 function setupExcel(){$('#download').onclick=()=>{if(!window.XLSX)return alert('엑셀 모듈을 불러오지 못했습니다.');if(view==='출입·작업관리'){
   let visitRows=visits.slice().sort((a,b)=>(a.startDate||'').localeCompare(b.startDate||'')).map(v=>({담당부서:v.dept||'부서 미지정',업체명:v.company,방문시작일:v.startDate,방문종료일:v.endDate,시작시간:v.startTime||'',종료시간:v.endTime||'',방문인원:v.headcount||1,방문대표자:v.representative||'',대표자연락처:v.phone||'',담당자:v.manager||'',출입증지급:v.badgeStatus||'미지급',출입구역:(v.zones||[]).join(', '),신청사유:v.reason||''}));
   let utilityRows=utilityWorks.slice().sort((a,b)=>(a.workDate||'').localeCompare(b.workDate||'')).map(w=>({담당부서:w.dept||'부서 미지정',작업명:w.workName,작업대상유틸리티:(w.targets||[]).join(', '),작업예정일:w.workDate,시작시간:w.startTime||'',종료시간:w.endTime||'',작업내용:w.workContent||'',작업장소:w.location||'',작업담당자:w.manager||'',작업업체:w.company||'',유틸리티차단여부:w.shutdown||'',관련부서협의:(w.departments||[]).join(', '),비고:w.note||''}));
-  let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(visitRows),'방문업체');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(utilityRows),'유틸리티작업');XLSX.writeFile(wb,'FCT_출입작업관리_rev.34.xlsx');return}let rows;
+  let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(visitRows),'방문업체');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(utilityRows),'유틸리티작업');XLSX.writeFile(wb,'FCT_출입작업관리_rev.35.xlsx');return}let rows;
 if(depts.includes(view)){
   let y=date.getFullYear(),m=date.getMonth(),start=`${y}-${pad(m+1)}-01`,end=`${y}-${pad(m+1)}-${pad(new Date(y,m+1,0).getDate())}`;
   rows=filtered(occurrences(start,end)).map(e=>({담당부서:e.dept,날짜:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:e.kind?'':(recurrenceLabel(e)||'한 번만'),종료시간:e.endTime||'',구분:e.kind==='visit'?'방문업체':e.kind==='utility'?'유틸리티 작업':'일반 일정'}));
 }else{
   rows=events.map(e=>({담당부서:e.dept,날짜:e.date,시간:e.time||'',일정명:e.name,내용:e.description||'',반복주기:recurrenceLabel(e)||'한 번만',종료시간:e.endTime||'',구분:'일반 일정'}));
-}let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.34.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['날짜']||r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
+}let ws=XLSX.utils.json_to_sheet(rows,{header:headers}),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'일정');XLSX.writeFile(wb,`FCT_${view}_일정_rev.35.xlsx`)};$('#upload').onclick=()=>$('#excelFile').click();$('#excelFile').onchange=async e=>{let file=e.target.files[0];if(!file||!window.XLSX)return;try{let wb=XLSX.read(await file.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),add=[],bad=[];for(let[i,r]of rows.entries()){let dept=String(r['담당부서']).trim(),dt=String(r['날짜']||r['기준일']).slice(0,10),name=String(r['일정명']).trim(),rep=String(r['반복주기']||'한 번만'),m=/^(\d{1,2})(년|개월|주)마다$/.exec(rep);if(!depts.includes(dept)||!valid(dt)||!name){bad.push(i+2);continue}add.push({id:crypto.randomUUID?.()||String(Date.now()+i),dept,date:dt,time:String(r['시간']||''),endTime:String(r['종료시간']||''),name,description:String(r['내용']||''),repeat:m?'interval':'none',intervalCount:m?+m[1]:null,intervalUnit:m?(m[2]==='년'?'year':m[2]==='주'?'week':'month'):null})}if(bad.length)throw new Error(`${bad.join(', ')}행 확인 필요`);events.push(...add);render();queueSave();alert(`${add.length}건 등록했습니다.`)}catch(err){alert('엑셀 등록 실패: '+err.message)}finally{e.target.value=''}}}
 setAdminMode(false);setupForms();setupEventDetail();setupVisits();setupUtilities();setupBulkDelete();setupQr();setupExcel();setupHome();setupLock();setTimeout(()=>$('#lockPin').focus(),0);
 })();
 
