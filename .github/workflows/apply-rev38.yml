@@ -1,0 +1,30 @@
+name: Apply usage guide tab rev38
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply rev.38 patch
+        run: python scripts/apply_rev38.py
+      - name: Validate JavaScript syntax
+        run: node --check /tmp/fct_schedule_rev38.js
+      - name: Commit rev.38
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html FCT_통합일정_rev.38.html
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Add dedicated usage guide tab rev.38"
+            git push
+          fi
