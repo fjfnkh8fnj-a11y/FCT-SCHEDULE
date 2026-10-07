@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b4f9c">
+<title>FCT 식사관리</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><div class="head"><div class="logo">FCT 식사관리</div><div class="who" id="who">로그인 전</div></div></header>
+<main>
+<section id="authView" class="auth">
+  <div class="card">
+    <div class="switch"><button id="loginTab" class="on" onclick="showAuth('login')">로그인</button><button id="signupTab" onclick="showAuth('signup')">회원가입</button></div>
+    <div id="restaurantHint" class="notice hidden"></div>
+    <div id="loginForm">
+      <h2>사번 로그인</h2>
+      <p class="muted">일반 직원은 사번만 입력하면 됩니다.</p>
+      <label>사번</label><input id="loginNo" inputmode="text" autocomplete="username" placeholder="사번 입력">
+      <div id="pinRow" class="hidden"><label>마스터 PIN</label><input id="loginPin" inputmode="numeric" type="password" autocomplete="current-password" placeholder="PIN 입력"></div>
+      <button class="btn full big" style="margin-top:12px" onclick="doLogin()">로그인</button>
+      <div id="loginMsg"></div>
+    </div>
+    <div id="signupForm" class="hidden">
+      <h2>회원가입</h2>
+      <div class="row mobile"><div><label>이름</label><input id="suName"></div><div><label>사번</label><input id="suNo"></div></div>
+      <label>부서</label><select id="suDept"><option>품질</option><option>박막</option><option>전반</option><option>가공</option><option>소성</option><option>경영지원</option></select>
+      <label>구분</label><select id="suType"><option value="OP">OP</option><option value="ENGINEER">엔지니어</option></select>
+      <button class="btn full big" style="margin-top:12px" onclick="doSignup()">회원가입</button>
+      <div id="signupMsg"></div>
+    </div>
+  </div>
+</section>
+<section id="userView" class="hidden">
+  <div class="grid g2">
+    <div class="card">
+      <div class="row"><div><h2 id="mealTitle">식사 등록</h2><div id="identity" class="muted"></div></div><button class="btn2 auto" onclick="logout()">로그아웃</button></div>
+      <div id="noQr" class="notice hidden">식사 등록은 식당에 부착된 QR을 스캔해 접속해 주세요.</div>
+      <div id="mealBox" class="hidden">
+        <div class="person"><div class="info"><b id="restaurantName">식당</b><span class="muted small">QR로 자동 인식된 식당</span></div><span class="tag">고정 QR</span></div>
+        <div class="sep"></div>
+        <h3>같이 식사하는 사람</h3>
+        <div class="notice">본인은 자동 포함됩니다.</div>
+        <div id="addTypeWrap" class="hidden"><label>사람 추가 방식</label><select id="addType" onchange="renderAddType()"><option value="employee">사번 등록</option><option value="external">외부업체</option></select></div>
+        <div id="employeeAdd"><label>사번 추가</label><div class="row"><input id="addNo" placeholder="동행자 사번"><button class="btn2 auto" onclick="addEmployeeCompanion()">추가</button></div></div>
+        <div id="externalAdd" class="hidden"><label>외부업체 엔지니어 추가</label><div class="row mobile"><input id="extCompany" placeholder="업체명"><input id="extName" placeholder="이름"><button class="btn2 auto" onclick="addExternal()">추가</button></div></div>
+        <div id="participants"></div>
+        <div id="manualMealType" class="hidden"><label>식사 구분</label><select id="manualMeal"><option value="LUNCH">점심</option><option value="DINNER">저녁</option></select></div>
+        <button class="btn full big" style="margin-top:14px" onclick="submitMeal()">현재 인원 전체 식사 등록</button>
+        <div id="mealMsg"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>최근 등록내역</h2>
+      <div class="table"><table><thead><tr><th>일자</th><th>시간</th><th>식당</th><th>구분</th><th>대상</th></tr></thead><tbody id="recentBody"></tbody></table></div>
+    </div>
+  </div>
+</section>
+<section id="adminView" class="hidden" style="margin-top:14px">
+  <div class="tabs">
+    <button class="on" data-a="dash" onclick="adminTab('dash')">현황</button>
+    <button data-a="users" onclick="adminTab('users')">직원관리</button>
+    <button data-a="restaurants" onclick="adminTab('restaurants')">식당·QR</button>
+    <button data-a="records" onclick="adminTab('records')">식사기록·정산</button>
+    <button data-a="settings" onclick="adminTab('settings')">설정</button>
+  </div>
+  <div id="ap-dash" class="adminPanel on">
+    <div class="kpis" id="kpis"></div>
+    <div class="card" style="margin-top:12px"><h2>이번 달 식당별 집계</h2><div id="dashSummary" class="table"></div></div>
+  </div>
+  <div id="ap-users" class="adminPanel">
+    <div class="grid g2">
+      <div class="card">
+        <h2>직원 등록 / 수정</h2>
+        <input type="hidden" id="euId">
+        <div class="row mobile"><div><label>사번</label><input id="euNo"></div><div><label>이름</label><input id="euName"></div></div>
+        <div class="row mobile"><div><label>부서</label><select id="euDept"><option>품질</option><option>박막</option><option>전반</option><option>가공</option><option>소성</option><option>경영지원</option></select></div><div><label>구분</label><select id="euType"><option value="OP">OP</option><option value="ENGINEER">엔지니어</option></select></div></div>
+        <button class="btn" style="margin-top:12px" onclick="saveUser()">저장</button><button class="btn2" onclick="clearUserForm()">초기화</button>
+        <div class="sep"></div>
+        <h3>엑셀 일괄등록</h3>
+        <p class="muted small">열 이름: 사번 / 이름 / 부서 / 구분(OP 또는 엔지니어)</p>
+        <input id="userExcel" type="file" accept=".xlsx,.xls,.csv" onchange="importUsers(this)">
+        <button class="btn2" style="margin-top:10px" onclick="downloadUsers()">직원목록 엑셀 다운로드</button>
+      </div>
+      <div class="card">
+        <div class="row"><h2 style="margin:0">직원 목록</h2><button class="btn2 auto" onclick="loadUsers()">새로고침</button></div>
+        <div class="table" style="margin-top:12px"><table><thead><tr><th>사번</th><th>이름</th><th>부서</th><th>구분</th><th>권한</th><th>상태</th><th>관리</th></tr></thead><tbody id="usersBody"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+  <div id="ap-restaurants" class="adminPanel">
+    <div class="card">
+      <h2>식당 등록 / 수정</h2>
+      <input type="hidden" id="erId">
+      <div class="row mobile"><div><label>식당명</label><input id="erName"></div><div><label>점심 단가</label><input id="erLunch" type="number" value="0"></div><div><label>저녁 단가</label><input id="erDinner" type="number" value="0"></div></div>
+      <button class="btn" style="margin-top:12px" onclick="saveRestaurant()">저장</button><button class="btn2" onclick="clearRestaurantForm()">초기화</button>
+      <p class="muted small">식당을 등록하면 해당 식당 전용 고정 QR이 자동 생성됩니다.</p>
+    </div>
+    <div id="restaurantCards" class="grid g3" style="margin-top:12px"></div>
+  </div>
+  <div id="ap-records" class="adminPanel">
+    <div class="card">
+      <div class="row mobile"><div><label>시작일</label><input id="rf" type="date"></div><div><label>종료일</label><input id="rt" type="date"></div><button class="btn auto" onclick="loadRecords()">조회</button><button class="btn2 auto" onclick="downloadRecords()">엑셀 다운로드</button></div>
+    </div>
+    <div class="card" style="margin-top:12px"><h2>정산 집계</h2><div id="recordSummary" class="table"></div></div>
+    <div class="card" style="margin-top:12px"><h2>전체 식사기록</h2><div class="table"><table><thead><tr><th>일자</th><th>시간</th><th>이름</th><th>사번</th><th>구분</th><th>부서/업체</th><th>식당</th><th>식사</th><th>등록자</th><th>관리</th></tr></thead><tbody id="recordsBody"></tbody></table></div></div>
+  </div>
+  <div id="ap-settings" class="adminPanel">
+    <div class="grid g2">
+      <div class="card"><h2>식사시간 설정</h2><div class="row mobile"><div><label>점심 시작</label><input id="ls" type="time"></div><div><label>점심 종료</label><input id="le" type="time"></div></div><div class="row mobile"><div><label>저녁 시작</label><input id="ds" type="time"></div><div><label>저녁 종료</label><input id="de" type="time"></div></div><button class="btn" style="margin-top:12px" onclick="saveSettings()">저장</button></div>
+      <div class="card"><h2>마스터 PIN 변경</h2><label>현재 PIN</label><input id="oldPin" type="password" inputmode="numeric"><label>새 PIN</label><input id="newPin" type="password" inputmode="numeric"><button class="btn" style="margin-top:12px" onclick="changePin()">PIN 변경</button><div class="notice">추가 마스터는 최초 마스터가 지정한 임시 PIN으로 로그인한 뒤 여기서 변경할 수 있습니다.</div></div>
+    </div>
+  </div>
+</section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
